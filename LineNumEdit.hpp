@@ -290,6 +290,10 @@ public:
 
     void Prepare()
     {
+        assert(::IsWindow(m_hwnd));
+        assert(!!(::GetWindowLongW(m_hwnd, GWL_STYLE) & WS_CHILD));
+        assert(!!(::GetWindowLongW(m_hwnd, GWL_STYLE) & ES_MULTILINE));
+
         RECT rcClient;
         ::GetClientRect(m_hwnd, &rcClient);
         INT cxColumn = GetLineNumberColumnWidth();
