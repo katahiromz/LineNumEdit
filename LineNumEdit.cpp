@@ -73,16 +73,14 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC, RECT& rcClient)
     HGDIOBJ hFontOld = ::SelectObject(hdcMem, hFont);
     if (m_bottomline)
     {
-        SIZE siz;
-        GetTextExtentPoint32(hdcMem, TEXT("0"), 1, &siz);
-
         TCHAR szText[32];
         ::SetTextColor(hdcMem, m_rgbText);
         ::SetBkMode(hdcMem, TRANSPARENT);
+        INT cyLine = GetLineHeight();
         for (INT iLine = m_topline; iLine < m_bottomline; ++iLine)
         {
-            INT yLine = m_topmargin + siz.cy * (iLine - m_topline);
-            RECT rc = { 0, yLine, cx - 1, yLine + siz.cy };
+            INT yLine = m_topmargin + cyLine * (iLine - m_topline);
+            RECT rc = { 0, yLine, cx - 1, yLine + cyLine };
             StringCchPrintf(szText, _countof(szText), m_format, iLine + m_linedelta);
 
             if (HANDLE hProp = ::GetProp(hwnd, GetPropName(iLine)))
