@@ -1,25 +1,15 @@
 #include <windows.h>
 #include <windowsx.h>
 #include <commctrl.h>
+#include "LineNumEdit.hpp"
 #include "resource.h"
-
-#ifndef LINENUMEDIT_SUPERCLASSING
-    #include "LineNumEdit.hpp"
-    static LineNumEdit s_hwndEdit;
-#endif
 
 BOOL OnInitDialog(HWND hwnd, HWND hwndFocus, LPARAM lParam)
 {
-#ifndef LINENUMEDIT_SUPERCLASSING
-    s_hwndEdit.Attach(GetDlgItem(hwnd, edt1));
-    s_hwndEdit.Prepare();
-    if (0)
-    {
-        ::SendMessage(s_hwndEdit, LNEM_SETLINEDELTA, 0, 0);
-        ::SendMessage(s_hwndEdit, LNEM_SETLINENUMFORMAT, 0, (LPARAM)TEXT("%08X"));
-        ::SendMessage(s_hwndEdit, LNEM_SETNUMOFDIGITS, 8, 0);
-    }
-#endif
+    HWND hwndEdit = GetDlgItem(hwnd, edt1);
+    ::SendMessage(hwndEdit, LNEM_SETLINEDELTA, 0, 0);
+    ::SendMessage(hwndEdit, LNEM_SETLINENUMFORMAT, 0, (LPARAM)TEXT("%08X"));
+    ::SendMessage(hwndEdit, LNEM_SETNUMOFDIGITS, 8, 0);
     return TRUE;
 }
 
@@ -52,9 +42,7 @@ WinMain(HINSTANCE   hInstance,
         INT         nCmdShow)
 {
     InitCommonControls();
-#ifdef LINENUMEDIT_SUPERCLASSING
-    LoadLibraryA("LineNumEdit");
-#endif
-    DialogBoxW(hInstance, MAKEINTRESOURCEW(IDD_MAIN), NULL, DialogProc);
+    LoadLibrary(TEXT("LineNumEdit"));
+    DialogBox(hInstance, MAKEINTRESOURCE(IDD_MAIN), NULL, DialogProc);
     return 0;
 }

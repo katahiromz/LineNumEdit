@@ -11,12 +11,6 @@ project(LineNumEdit CXX RC)
 
 ##############################################################################
 
-# main.exe uses superclassing?
-option(LINENUMEDIT_SUPERCLASSING "Use LineNumEdit superclassing" ON)
-if(LINENUMEDIT_SUPERCLASSING)
-    add_definitions(-DLINENUMEDIT_SUPERCLASSING)
-endif()
-
 # LineNumEdit.dll
 add_library(LineNumEdit SHARED LineNumEdit.cpp)
 target_compile_definitions(LineNumEdit PRIVATE UNICODE _UNICODE)
