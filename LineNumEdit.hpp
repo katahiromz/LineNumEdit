@@ -7,6 +7,20 @@
 #ifndef _INC_COMMCTRL
     #include <commctrl.h>
 #endif
+
+// messages for LineNumEdit
+#define LNEM_SETLINENUMFORMAT (WM_USER + 100)
+#define LNEM_SETNUMOFDIGITS (WM_USER + 101)
+#define LNEM_SETBACKCOLOR (WM_USER + 102)
+#define LNEM_SETTEXTCOLOR (WM_USER + 103)
+#define LNEM_SETLINEMARK (WM_USER + 104)
+#define LNEM_CLEARLINEMARKS (WM_USER + 105)
+#define LNEM_SETLINEDELTA (WM_USER + 106)
+#define LNEM_SETCOLUMNWIDTH (WM_USER + 107)
+#define LNEM_GETCOLUMNWIDTH (WM_USER + 108)
+
+#ifdef LINENUMEDIT_IMPL
+
 #include <string>
 #include <map>
 #include <strsafe.h>
@@ -192,17 +206,6 @@ protected:
     friend class LineNumEdit;
 };
 
-// messages for LineNumEdit
-#define LNEM_SETLINENUMFORMAT (WM_USER + 100)
-#define LNEM_SETNUMOFDIGITS (WM_USER + 101)
-#define LNEM_SETBACKCOLOR (WM_USER + 102)
-#define LNEM_SETTEXTCOLOR (WM_USER + 103)
-#define LNEM_SETLINEMARK (WM_USER + 104)
-#define LNEM_CLEARLINEMARKS (WM_USER + 105)
-#define LNEM_SETLINEDELTA (WM_USER + 106)
-#define LNEM_SETCOLUMNWIDTH (WM_USER + 107)
-#define LNEM_GETCOLUMNWIDTH (WM_USER + 108)
-
 class LineNumEdit : public LineNumBase
 {
 public:
@@ -332,3 +335,5 @@ protected:
 
     void UpdateTopAndBottom();
 };
+
+#endif  // def LINENUMEDIT_IMPL

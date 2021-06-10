@@ -13,7 +13,7 @@ project(LineNumEdit CXX RC)
 
 # LineNumEdit.dll
 add_library(LineNumEdit SHARED LineNumEdit.cpp)
-target_compile_definitions(LineNumEdit PRIVATE UNICODE _UNICODE)
+target_compile_definitions(LineNumEdit PRIVATE UNICODE _UNICODE LINENUMEDIT_IMPL)
 set_target_properties(LineNumEdit PROPERTIES PREFIX "")
 set_target_properties(LineNumEdit PROPERTIES OUTPUT_NAME "LineNumEdit")
 

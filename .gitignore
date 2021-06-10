@@ -35,3 +35,4 @@ a.*
 *.ninja
 *.dll
 *.a
+RosBE-Logs/
