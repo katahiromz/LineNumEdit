@@ -81,7 +81,7 @@ class LineNumStatic : public LineNumBase
 public:
     LineNumStatic(HWND hwnd = NULL) : LineNumBase(hwnd)
     {
-        m_rgbFore = ::GetSysColor(COLOR_WINDOWTEXT);
+        m_rgbText = ::GetSysColor(COLOR_WINDOWTEXT);
         m_rgbBack = ::GetSysColor(COLOR_3DFACE);
         m_topmargin = 0;
         m_topline = 0;
@@ -103,9 +103,9 @@ public:
         return DefWndProc(hwnd, uMsg, wParam, lParam);
     }
 
-    void SetForeColor(COLORREF rgb, BOOL redraw = TRUE)
+    void SetTextColor(COLORREF rgb, BOOL redraw = TRUE)
     {
-        m_rgbFore = rgb;
+        m_rgbText = rgb;
         if (redraw)
             ::InvalidateRect(m_hwnd, NULL, TRUE);
     }
@@ -136,7 +136,7 @@ public:
     }
 
 protected:
-    COLORREF m_rgbFore;
+    COLORREF m_rgbText;
     COLORREF m_rgbBack;
     INT m_topmargin;
     INT m_topline;
@@ -199,7 +199,7 @@ protected:
         ::DeleteObject(hbr);
 
         // right line
-        HPEN hPen = ::CreatePen(PS_SOLID, 0, m_rgbFore);
+        HPEN hPen = ::CreatePen(PS_SOLID, 0, m_rgbText);
         HGDIOBJ hPenOld = ::SelectObject(hdcMem, hPen);
         ::MoveToEx(hdcMem, rcClient.right - 1, rcClient.top, NULL);
         ::LineTo(hdcMem, rcClient.right - 1, rcClient.bottom);
@@ -215,7 +215,7 @@ protected:
             INT cyLine = siz.cy;
 
             WCHAR szText[32];
-            ::SetTextColor(hdcMem, m_rgbFore);
+            ::SetTextColor(hdcMem, m_rgbText);
             ::SetBkColor(hdcMem, m_rgbBack);
             ::SetBkMode(hdcMem, TRANSPARENT);
             for (INT iLine = m_topline; iLine <= m_bottomline; ++iLine)
@@ -268,6 +268,11 @@ protected:
         FORWARD_WM_MOUSEMOVE(hwndEdit, pt.x, pt.y, keyFlags, SendMessageW);
     }
 };
+
+#define LNEM_SETLINENUMFORMAT (WM_USER + 100)
+#define LNEM_SETNUMOFDIGITS (WM_USER + 101)
+#define LNEM_SETBACKCOLOR (WM_USER + 102)
+#define LNEM_SETTEXTCOLOR (WM_USER + 103)
 
 class LineNumEdit : public LineNumBase
 {
@@ -330,15 +335,17 @@ public:
     void SetWindowColor(BOOL fEnable)
     {
         if (fEnable)
-            m_hwndStatic.SetForeColor(::GetSysColor(COLOR_WINDOWTEXT));
+            m_hwndStatic.SetTextColor(::GetSysColor(COLOR_WINDOWTEXT));
         else
-            m_hwndStatic.SetForeColor(::GetSysColor(COLOR_GRAYTEXT));
+            m_hwndStatic.SetTextColor(::GetSysColor(COLOR_GRAYTEXT));
 
         m_hwndStatic.SetBackColor(::GetSysColor(COLOR_3DFACE));
     }
 
-    void SetLineNumberFormat(LPCWSTR format = L"%d")
+    void SetLineNumberFormat(LPCWSTR format)
     {
+        if (!format)
+            format = L"%d";
         m_hwndStatic.SetLineNumberFormat(format);
         ::InvalidateRect(m_hwndStatic, NULL, TRUE);
     }
@@ -360,6 +367,18 @@ public:
             HANDLE_MSG(hwnd, WM_MOUSEWHEEL, OnMouseWheel);
         case EM_LINESCROLL:
             return OnLineScroll(hwnd, wParam, lParam);
+        case LNEM_SETLINENUMFORMAT:
+            SetLineNumberFormat(reinterpret_cast<LPCWSTR>(lParam));
+            return 0;
+        case LNEM_SETNUMOFDIGITS:
+            SetNumberOfDigits((INT)wParam);
+            return 0;
+        case LNEM_SETBACKCOLOR:
+            m_hwndStatic.SetBackColor(COLORREF(wParam));
+            return 0;
+        case LNEM_SETTEXTCOLOR:
+            m_hwndStatic.SetTextColor(COLORREF(wParam));
+            return 0;
         default:
             break;
         }
