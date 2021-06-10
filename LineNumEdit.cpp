@@ -36,7 +36,7 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC, RECT& rcClient)
     HBITMAP hbm = ::CreateCompatibleBitmap(hDC, cx, cy);
     HGDIOBJ hbmOld = ::SelectObject(hdcMem, hbm);
 
-    HWND hwndEdit = GetParent(hwnd);
+    HWND hwndEdit = ::GetParent(hwnd);
 
     // fill background
     UINT uMsg;
@@ -45,11 +45,13 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC, RECT& rcClient)
     else
         uMsg = WM_CTLCOLOREDIT;
 
-    HBRUSH hbr = (HBRUSH)SendMessage(GetParent(hwndEdit), uMsg, (WPARAM)hDC, (LPARAM)hwndEdit);
+    HBRUSH hbr = reinterpret_cast<HBRUSH>(
+        ::SendMessage(GetParent(hwndEdit), uMsg,
+                      reinterpret_cast<WPARAM>(hDC), reinterpret_cast<LPARAM>(hwndEdit)));
     ::FillRect(hdcMem, &rcClient, hbr);
 
     // get margins
-    DWORD dwMargins = (DWORD)SendMessage(hwndEdit, EM_GETMARGINS, 0, 0);
+    DWORD dwMargins = DWORD(SendMessage(hwndEdit, EM_GETMARGINS, 0, 0));
     INT leftmargin = LOWORD(dwMargins), rightmargin = HIWORD(dwMargins);
 
     // shrink rectangle
@@ -181,7 +183,7 @@ LineNumEdit::WindowProcDx(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         m_hwndStatic.Redraw();
         return 0;
     case LNEM_SETCOLUMNWIDTH:
-        m_cxColumn = (INT)wParam;
+        m_cxColumn = INT(wParam);
         Prepare();
         return 0;
     case LNEM_GETCOLUMNWIDTH:

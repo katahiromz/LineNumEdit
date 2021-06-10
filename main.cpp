@@ -11,6 +11,7 @@ BOOL OnInitDialog(HWND hwnd, HWND hwndFocus, LPARAM lParam)
     ::SendMessage(hwndEdit, LNEM_SETLINENUMFORMAT, 0, (LPARAM)TEXT("%08X"));
     ::SendMessage(hwndEdit, LNEM_SETNUMOFDIGITS, 8, 0);
     ::SendMessage(hwndEdit, LNEM_SETLINEMARK, 1, RGB(255, 192, 192));
+    ::SendMessage(hwndEdit, LNEM_SETLINEMARK, 3, RGB(255, 255, 192));
     return TRUE;
 }
 

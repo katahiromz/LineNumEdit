@@ -7,9 +7,6 @@
 #ifndef _INC_COMMCTRL
     #include <commctrl.h>
 #endif
-#ifndef _INC_SHLWAPI
-    #include <shlwapi.h>
-#endif
 
 // messages for LineNumEdit
 #define LNEM_SETLINENUMFORMAT (WM_USER + 100)
@@ -21,6 +18,10 @@
 #define LNEM_GETCOLUMNWIDTH (WM_USER + 106)
 
 #ifdef LINENUMEDIT_IMPL
+
+#ifndef _INC_SHLWAPI
+    #include <shlwapi.h>
+#endif
 
 #include <strsafe.h>
 #include <cassert>
@@ -163,14 +164,14 @@ protected:
     LPCTSTR GetPropName(INT iLine) const
     {
         static TCHAR s_szProp[64];
-        StringCchPrintf(s_szProp, _countof(s_szProp), TEXT("LineNumStatic-%d"), iLine);
+        StringCchPrintf(s_szProp, _countof(s_szProp), TEXT("LineNum-%u"), iLine);
         return s_szProp;
     }
 
     static BOOL CALLBACK
     PropEnumProc(HWND hwnd, LPCTSTR lpszString, HANDLE hData)
     {
-        if (StrCmpNI(lpszString, TEXT("LineNumStatic-"), 14) == 0)
+        if (StrCmpNI(lpszString, TEXT("LineNum-"), 8) == 0)
             ::RemoveProp(hwnd, lpszString);
         return TRUE;
     }
@@ -282,6 +283,9 @@ protected:
     INT m_cxColumn;
     LineNumStatic m_hwndStatic;
 
+    INT GetColumnWidth();
+    void UpdateTopAndBottom();
+
     void OnEnable(HWND hwnd, BOOL fEnable)
     {
         FORWARD_WM_ENABLE(hwnd, fEnable, DefWndProc);
@@ -345,9 +349,6 @@ protected:
         UpdateTopAndBottom();
         m_hwndStatic.Redraw();
     }
-
-    INT GetColumnWidth();
-    void UpdateTopAndBottom();
 };
 
 #endif  // def LINENUMEDIT_IMPL
