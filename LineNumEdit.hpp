@@ -149,15 +149,10 @@ protected:
         return ::GetParent(m_hwnd);
     }
 
-    HFONT GetFont() const
-    {
-        return (HFONT)GetWindowFont(GetEdit());
-    }
-
     INT GetLineHeight() const
     {
         HDC hDC = ::GetDC(m_hwnd);
-        HGDIOBJ hFontOld = SelectObject(hDC, GetFont());
+        HGDIOBJ hFontOld = SelectObject(hDC, GetWindowFont(GetEdit()));
         TEXTMETRIC tm;
         ::GetTextMetrics(hDC, &tm);
         SelectObject(hDC, hFontOld);

@@ -69,7 +69,7 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC, RECT& rcClient)
     ::DeleteObject(::SelectObject(hdcMem, hPenOld));
 
     // draw text
-    HFONT hFont = GetFont();
+    HFONT hFont = GetWindowFont(GetEdit());
     HGDIOBJ hFontOld = ::SelectObject(hdcMem, hFont);
     if (m_bottomline)
     {
