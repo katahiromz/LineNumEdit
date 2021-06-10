@@ -83,9 +83,10 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC, RECT& rcClient)
         {
             INT yLine = m_topmargin + cyLine * (iLine - m_topline);
             RECT rc = { 0, yLine, cx - 1, yLine + cyLine };
-            StringCchPrintf(szText, _countof(szText), m_format, iLine + m_linedelta);
+            INT nLineNo = iLine + m_linedelta;
+            StringCchPrintf(szText, _countof(szText), m_format, nLineNo);
 
-            if (HANDLE hProp = ::GetProp(hwnd, GetPropName(iLine)))
+            if (HANDLE hProp = ::GetProp(hwnd, GetPropName(nLineNo)))
             {
                 COLORREF rgbBack = COLORREF(reinterpret_cast<ULONG_PTR>(hProp));
                 HBRUSH hbr = ::CreateSolidBrush(rgbBack);
