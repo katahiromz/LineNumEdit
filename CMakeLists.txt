@@ -19,7 +19,7 @@ set_target_properties(LineNumEdit PROPERTIES OUTPUT_NAME "LineNumEdit")
 target_link_libraries(LineNumEdit shlwapi)
 
 # libLineNumEdit_static.a
-add_library(LineNumEdit_static SHARED LineNumEdit.cpp)
+add_library(LineNumEdit_static STATIC LineNumEdit.cpp)
 target_compile_definitions(LineNumEdit_static PRIVATE UNICODE _UNICODE LINENUMEDIT_IMPL)
 target_link_libraries(LineNumEdit_static shlwapi)
 
