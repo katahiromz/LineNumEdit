@@ -10,6 +10,7 @@
 #ifndef _INC_SHLWAPI
     #include <shlwapi.h>
 #endif
+#include <tchar.h>
 
 // messages for LineNumEdit
 #define LNEM_SETLINENUMFORMAT (WM_USER + 100)
@@ -24,8 +25,6 @@
 
 #ifdef LINENUMEDIT_IMPL
 
-#include <string>
-#include <map>
 #include <strsafe.h>
 #include <cassert>
 
@@ -147,7 +146,6 @@ protected:
     INT m_bottomline;
     INT m_linedelta;
     LPTSTR m_format;
-    std::map<INT, COLORREF> m_line2color;
 
     HFONT GetFont() const
     {
@@ -163,6 +161,31 @@ protected:
         SelectObject(hDC, hFontOld);
         ::ReleaseDC(m_hwnd, hDC);
         return tm.tmAveCharWidth;
+    }
+
+    LPCTSTR GetPropName(INT iLine) const
+    {
+        static TCHAR s_szProp[64];
+        StringCchPrintf(s_szProp, _countof(s_szProp), TEXT("LineNumStatic-%d"), iLine);
+        return s_szProp;
+    }
+
+    static BOOL CALLBACK
+    PropEnumProc(HWND hwnd, LPCTSTR lpszString, HANDLE hData)
+    {
+        if (StrCmpNI(lpszString, TEXT("LineNumStatic-"), 14) == 0)
+            ::RemoveProp(hwnd, lpszString);
+        return TRUE;
+    }
+
+    void DeleteProps(HWND hwnd)
+    {
+        ::EnumProps(hwnd, PropEnumProc);
+    }
+
+    void OnDestroy(HWND hwnd)
+    {
+        DeleteProps(hwnd);
     }
 
     BOOL OnEraseBkgnd(HWND hwnd, HDC hdc)

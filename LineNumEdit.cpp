@@ -1,4 +1,5 @@
 #include "LineNumEdit.hpp"
+#include <cstring>
 
 LineNumStatic::LineNumStatic(HWND hwnd)
     : LineNumBase(hwnd)
@@ -22,6 +23,7 @@ LineNumStatic::WindowProcDx(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         HANDLE_MSG(hwnd, WM_LBUTTONDOWN, OnLButtonDown);
         HANDLE_MSG(hwnd, WM_LBUTTONDBLCLK, OnLButtonDown);
         HANDLE_MSG(hwnd, WM_MOUSEMOVE, OnMouseMove);
+        HANDLE_MSG(hwnd, WM_DESTROY, OnDestroy);
     }
     return DefWndProc(hwnd, uMsg, wParam, lParam);
 }
@@ -48,7 +50,7 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC, RECT& rcClient)
     ::FillRect(hdcMem, &rcClient, hbr);
 
     // get margins
-    DWORD dwMargins = SendMessage(hwndEdit, EM_GETMARGINS, 0, 0);
+    DWORD dwMargins = (DWORD)SendMessage(hwndEdit, EM_GETMARGINS, 0, 0);
     INT leftmargin = LOWORD(dwMargins), rightmargin = HIWORD(dwMargins);
 
     // shrink rectangle
@@ -86,14 +88,14 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC, RECT& rcClient)
             RECT rc = { 0, yLine, cx - 1, yLine + cyLine };
             StringCchPrintf(szText, _countof(szText), m_format, iLine + m_linedelta);
 
-            auto it = m_line2color.find(iLine);
-            if (it != m_line2color.end())
+            if (HANDLE hProp = ::GetProp(hwnd, GetPropName(iLine)))
             {
-                COLORREF rgbBack = it->second;
+                COLORREF rgbBack = COLORREF(reinterpret_cast<ULONG_PTR>(hProp));
                 HBRUSH hbr = ::CreateSolidBrush(rgbBack);
                 ::FillRect(hdcMem, &rc, hbr);
                 ::DeleteObject(hbr);
             }
+
             rc.right -= rightmargin;
             UINT uFormat = DT_RIGHT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX;
             ::DrawText(hdcMem, szText, ::lstrlen(szText), &rc, uFormat);
@@ -118,7 +120,7 @@ void LineNumEdit::Prepare()
     INT cyColumn = rcClient.bottom - rcClient.top;
 
     // get margins
-    DWORD dwMargins = SendMessage(m_hwnd, EM_GETMARGINS, 0, 0);
+    DWORD dwMargins = DWORD(SendMessage(m_hwnd, EM_GETMARGINS, 0, 0));
     INT leftmargin = LOWORD(dwMargins), rightmargin = HIWORD(dwMargins);
 
     // adjust rectangle
@@ -175,14 +177,16 @@ LineNumEdit::WindowProcDx(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         m_hwndStatic.SetTextColor(COLORREF(wParam));
         return 0;
     case LNEM_SETLINEMARK:
-        if (COLORREF(lParam) == CLR_INVALID)
-            m_hwndStatic.m_line2color.erase(INT(wParam));
-        else
-            m_hwndStatic.m_line2color[INT(wParam)] = COLORREF(lParam);
+        {
+            LPCTSTR pszName = m_hwndStatic.GetPropName(INT(wParam));
+            ::RemoveProp(m_hwndStatic, pszName);
+            if (COLORREF(lParam) != CLR_INVALID && COLORREF(lParam) != CLR_NONE)
+                ::SetProp(m_hwndStatic, pszName, reinterpret_cast<HANDLE>(lParam));
+        }
         ::InvalidateRect(m_hwndStatic, NULL, FALSE);
         return 0;
     case LNEM_CLEARLINEMARKS:
-        m_hwndStatic.m_line2color.clear();
+        m_hwndStatic.DeleteProps(m_hwndStatic);
         ::InvalidateRect(m_hwndStatic, NULL, FALSE);
         return 0;
     case LNEM_SETLINEDELTA:
@@ -238,7 +242,7 @@ INT LineNumEdit::GetColumnWidth()
     ::ReleaseDC(m_hwnd, hDC);
 
     // get margins
-    DWORD dwMargins = SendMessage(m_hwnd, EM_GETMARGINS, 0, 0);
+    DWORD dwMargins = DWORD(SendMessage(m_hwnd, EM_GETMARGINS, 0, 0));
     INT leftmargin = LOWORD(dwMargins), rightmargin = HIWORD(dwMargins);
 
     m_cxColumn = leftmargin + (m_num_digits * siz.cx) + rightmargin + leftmargin;
