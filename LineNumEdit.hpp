@@ -8,6 +8,7 @@
     #include <commctrl.h>
 #endif
 #include <string>
+#include <map>
 #include <strsafe.h>
 #include <cassert>
 
@@ -79,14 +80,18 @@ protected:
 class LineNumStatic : public LineNumBase
 {
 public:
-    LineNumStatic(HWND hwnd = NULL) : LineNumBase(hwnd)
+    std::map<INT, COLORREF> m_line2color;
+
+    LineNumStatic(HWND hwnd = NULL)
+        : LineNumBase(hwnd)
+        , m_rgbText(::GetSysColor(COLOR_WINDOWTEXT))
+        , m_rgbBack(::GetSysColor(COLOR_3DFACE))
+        , m_topmargin(0)
+        , m_topline(0)
+        , m_bottomline(0)
+        , m_linedelta(1)
+        , m_format(L"%d")
     {
-        m_rgbText = ::GetSysColor(COLOR_WINDOWTEXT);
-        m_rgbBack = ::GetSysColor(COLOR_3DFACE);
-        m_topmargin = 0;
-        m_topline = 0;
-        m_bottomline = 0;
-        m_format = L"%d";
     }
 
     LRESULT CALLBACK
@@ -141,6 +146,7 @@ protected:
     INT m_topmargin;
     INT m_topline;
     INT m_bottomline;
+    INT m_linedelta;
     std::wstring m_format;
 
     HFONT GetFont() const
@@ -218,11 +224,20 @@ protected:
             ::SetTextColor(hdcMem, m_rgbText);
             ::SetBkColor(hdcMem, m_rgbBack);
             ::SetBkMode(hdcMem, TRANSPARENT);
-            for (INT iLine = m_topline; iLine <= m_bottomline; ++iLine)
+            for (INT iLine = m_topline; iLine < m_bottomline; ++iLine)
             {
-                StringCchPrintfW(szText, _countof(szText), m_format.c_str(), iLine);
                 INT yLine = m_topmargin + cyLine * (iLine - m_topline);
                 RECT rc = { 0, yLine, cx - 2, yLine + cyLine };
+                StringCchPrintfW(szText, _countof(szText), m_format.c_str(), iLine + m_linedelta);
+
+                auto it = m_line2color.find(iLine);
+                if (it != m_line2color.end())
+                {
+                    COLORREF rgbBack = it->second;
+                    HBRUSH hbr = ::CreateSolidBrush(rgbBack);
+                    ::FillRect(hdcMem, &rc, hbr);
+                    ::DeleteObject(hbr);
+                }
                 UINT uFormat = DT_RIGHT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX;
                 ::DrawTextW(hdcMem, szText, ::lstrlenW(szText), &rc, uFormat);
             }
@@ -267,30 +282,28 @@ protected:
         MapWindowPoints(hwnd, hwndEdit, &pt, 1);
         FORWARD_WM_MOUSEMOVE(hwndEdit, pt.x, pt.y, keyFlags, SendMessageW);
     }
+
+    friend class LineNumEdit;
 };
 
 #define LNEM_SETLINENUMFORMAT (WM_USER + 100)
 #define LNEM_SETNUMOFDIGITS (WM_USER + 101)
 #define LNEM_SETBACKCOLOR (WM_USER + 102)
 #define LNEM_SETTEXTCOLOR (WM_USER + 103)
+#define LNEM_SETLINEMARK (WM_USER + 104)
+#define LNEM_CLEARLINEMARKS (WM_USER + 105)
+#define LNEM_SETLINEDELTA (WM_USER + 106)
 
 class LineNumEdit : public LineNumBase
 {
 public:
-    LineNumEdit(HWND hwnd = NULL) : m_linedelta(1), m_num_digits(6)
+    LineNumEdit(HWND hwnd = NULL) : LineNumBase(hwnd), m_num_digits(6)
     {
-        if (hwnd)
-            Attach(hwnd);
     }
 
     static LPCWSTR SuperWndClassName()
     {
         return L"LineNumEdit";
-    }
-
-    void SetLineDelta(INT delta)
-    {
-        m_linedelta = delta;
     }
 
     void Prepare()
@@ -379,6 +392,21 @@ public:
         case LNEM_SETTEXTCOLOR:
             m_hwndStatic.SetTextColor(COLORREF(wParam));
             return 0;
+        case LNEM_SETLINEMARK:
+            if (COLORREF(lParam) == CLR_INVALID)
+                m_hwndStatic.m_line2color.erase(INT(wParam));
+            else
+                m_hwndStatic.m_line2color[INT(wParam)] = COLORREF(lParam);
+            ::InvalidateRect(m_hwndStatic, NULL, FALSE);
+            return 0;
+        case LNEM_CLEARLINEMARKS:
+            m_hwndStatic.m_line2color.clear();
+            ::InvalidateRect(m_hwndStatic, NULL, FALSE);
+            return 0;
+        case LNEM_SETLINEDELTA:
+            m_hwndStatic.m_linedelta = INT(wParam);
+            ::InvalidateRect(m_hwndStatic, NULL, FALSE);
+            return 0;
         default:
             break;
         }
@@ -429,7 +457,6 @@ public:
     }
 
 protected:
-    INT m_linedelta;
     INT m_num_digits;
     LineNumStatic m_hwndStatic;
 
@@ -546,9 +573,9 @@ protected:
         if (lineheight == 0)
             return;
 
-        INT topline = Edit_GetFirstVisibleLine(m_hwnd) + m_linedelta;
+        INT topline = Edit_GetFirstVisibleLine(m_hwnd);
         if (topline + (cyClient / lineheight) < maxline)
-            maxline = topline + (cyClient / lineheight);
+            maxline = topline + ((cyClient + lineheight - 1) / lineheight);
 
         m_hwndStatic.SetTopAndBottom(topline, maxline);
     }
