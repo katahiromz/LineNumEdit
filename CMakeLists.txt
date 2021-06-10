@@ -16,6 +16,7 @@ add_library(LineNumEdit SHARED LineNumEdit.cpp)
 target_compile_definitions(LineNumEdit PRIVATE UNICODE _UNICODE LINENUMEDIT_IMPL)
 set_target_properties(LineNumEdit PROPERTIES PREFIX "")
 set_target_properties(LineNumEdit PROPERTIES OUTPUT_NAME "LineNumEdit")
+target_link_libraries(LineNumEdit shlwapi)
 
 # main.exe
 add_executable(main WIN32 main.cpp main_res.rc)

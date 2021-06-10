@@ -7,6 +7,9 @@
 #ifndef _INC_COMMCTRL
     #include <commctrl.h>
 #endif
+#ifndef _INC_SHLWAPI
+    #include <shlwapi.h>
+#endif
 
 // messages for LineNumEdit
 #define LNEM_SETLINENUMFORMAT (WM_USER + 100)
@@ -95,6 +98,10 @@ class LineNumStatic : public LineNumBase
 {
 public:
     LineNumStatic(HWND hwnd = NULL);
+    ~LineNumStatic()
+    {
+        CoTaskMemFree(m_format);
+    }
 
     LRESULT CALLBACK
     WindowProcDx(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) override;
@@ -127,7 +134,8 @@ public:
 
     void SetLineNumberFormat(LPCTSTR format)
     {
-        m_format = format;
+        CoTaskMemFree(m_format);
+        SHStrDup(format, &m_format);
         ::InvalidateRect(m_hwnd, NULL, TRUE);
     }
 
@@ -138,11 +146,7 @@ protected:
     INT m_topline;
     INT m_bottomline;
     INT m_linedelta;
-#ifdef UNICODE
-    std::wstring m_format;
-#else
-    std::string m_format;
-#endif
+    LPTSTR m_format;
     std::map<INT, COLORREF> m_line2color;
 
     HFONT GetFont() const

@@ -8,8 +8,8 @@ LineNumStatic::LineNumStatic(HWND hwnd)
     , m_topline(0)
     , m_bottomline(0)
     , m_linedelta(1)
-    , m_format(TEXT("%d"))
 {
+    SHStrDup(TEXT("%d"), &m_format);
 }
 
 LRESULT CALLBACK
@@ -84,7 +84,7 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC, RECT& rcClient)
         {
             INT yLine = m_topmargin + cyLine * (iLine - m_topline);
             RECT rc = { 0, yLine, cx - 1, yLine + cyLine };
-            StringCchPrintf(szText, _countof(szText), m_format.c_str(), iLine + m_linedelta);
+            StringCchPrintf(szText, _countof(szText), m_format, iLine + m_linedelta);
 
             auto it = m_line2color.find(iLine);
             if (it != m_line2color.end())
