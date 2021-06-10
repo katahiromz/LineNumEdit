@@ -25,7 +25,7 @@ target_link_libraries(LineNumEdit_static shlwapi)
 
 # main.exe
 add_executable(main WIN32 main.cpp main_res.rc)
-if(FALSE)
+if(TRUE)
     target_link_libraries(main comctl32 shlwapi LineNumEdit_static)
     target_compile_definitions(main PRIVATE UNICODE _UNICODE LINENUMEDIT_IMPL)
 else()
