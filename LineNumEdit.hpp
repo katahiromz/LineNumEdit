@@ -173,11 +173,19 @@ protected:
         HBITMAP hbm = ::CreateCompatibleBitmap(hDC, cx, cy);
         HGDIOBJ hbmOld = ::SelectObject(hdcMem, hbm);
 
+        HWND hwndEdit = GetParent(hwnd);
+
         // fill background
-        ::FillRect(hdcMem, &rcClient, (HBRUSH)(COLOR_WINDOW + 1));
+        UINT uMsg;
+        if (!::IsWindowEnabled(hwndEdit) || (GetWindowLongW(hwndEdit, GWL_STYLE) & ES_READONLY))
+            uMsg = WM_CTLCOLORSTATIC;
+        else
+            uMsg = WM_CTLCOLOREDIT;
+
+        HBRUSH hbr = (HBRUSH)SendMessageW(GetParent(hwndEdit), uMsg, (WPARAM)hDC, (LPARAM)hwndEdit);
+        ::FillRect(hdcMem, &rcClient, hbr);
 
         // get margins
-        HWND hwndEdit = GetParent(hwnd);
         DWORD dwMargins = SendMessageW(hwndEdit, EM_GETMARGINS, 0, 0);
         INT leftmargin = LOWORD(dwMargins);
 
@@ -186,7 +194,7 @@ protected:
         cx -= leftmargin;
 
         // fill background
-        HBRUSH hbr = ::CreateSolidBrush(m_rgbBack);
+        hbr = ::CreateSolidBrush(m_rgbBack);
         ::FillRect(hdcMem, &rcClient, hbr);
         ::DeleteObject(hbr);
 
@@ -408,13 +416,13 @@ protected:
 
     void OnEnable(HWND hwnd, BOOL fEnable)
     {
-        SetWindowColor(fEnable);
+        SetWindowColor(fEnable && !(GetWindowLongW(hwnd, GWL_STYLE) & ES_READONLY));
     }
 
     void OnSysColorChange(HWND hwnd)
     {
         DefWndProc(hwnd, WM_SYSCOLORCHANGE, 0, 0);
-        SetWindowColor(::IsWindowEnabled(hwnd));
+        SetWindowColor(::IsWindowEnabled(hwnd) && !(GetWindowLongW(hwnd, GWL_STYLE) & ES_READONLY));
     }
 
     void OnVScroll(HWND hwnd, HWND hwndCtl, UINT code, int pos)
