@@ -13,6 +13,12 @@ BOOL OnInitDialog(HWND hwnd, HWND hwndFocus, LPARAM lParam)
 #ifndef LINENUMEDIT_SUPERCLASSING
     s_hwndEdit.Attach(GetDlgItem(hwnd, edt1));
     s_hwndEdit.Prepare();
+    if (0)
+    {
+        ::SendMessage(s_hwndEdit, LNEM_SETLINEDELTA, 0, 0);
+        ::SendMessage(s_hwndEdit, LNEM_SETLINENUMFORMAT, 0, (LPARAM)L"%08X");
+        ::SendMessage(s_hwndEdit, LNEM_SETNUMOFDIGITS, 8, 0);
+    }
 #endif
     return TRUE;
 }

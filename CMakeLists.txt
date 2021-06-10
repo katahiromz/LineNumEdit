@@ -12,7 +12,7 @@ project(LineNumEdit CXX RC)
 ##############################################################################
 
 # main.exe uses superclassing?
-option(LINENUMEDIT_SUPERCLASSING "Use LineNumEdit superclassing" ON)
+option(LINENUMEDIT_SUPERCLASSING "Use LineNumEdit superclassing" OFF)
 if(LINENUMEDIT_SUPERCLASSING)
     add_definitions(-DLINENUMEDIT_SUPERCLASSING)
 endif()

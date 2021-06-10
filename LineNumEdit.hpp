@@ -193,7 +193,7 @@ protected:
 
         // get margins
         DWORD dwMargins = SendMessageW(hwndEdit, EM_GETMARGINS, 0, 0);
-        INT leftmargin = LOWORD(dwMargins);
+        INT leftmargin = LOWORD(dwMargins), rightmargin = HIWORD(dwMargins);
 
         // shrink rectangle
         rcClient.right -= leftmargin;
@@ -227,7 +227,7 @@ protected:
             for (INT iLine = m_topline; iLine < m_bottomline; ++iLine)
             {
                 INT yLine = m_topmargin + cyLine * (iLine - m_topline);
-                RECT rc = { 0, yLine, cx - 2, yLine + cyLine };
+                RECT rc = { 0, yLine, cx - 1, yLine + cyLine };
                 StringCchPrintfW(szText, _countof(szText), m_format.c_str(), iLine + m_linedelta);
 
                 auto it = m_line2color.find(iLine);
@@ -238,6 +238,7 @@ protected:
                     ::FillRect(hdcMem, &rc, hbr);
                     ::DeleteObject(hbr);
                 }
+                rc.right -= rightmargin;
                 UINT uFormat = DT_RIGHT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX;
                 ::DrawTextW(hdcMem, szText, ::lstrlenW(szText), &rc, uFormat);
             }
@@ -294,11 +295,15 @@ protected:
 #define LNEM_SETLINEMARK (WM_USER + 104)
 #define LNEM_CLEARLINEMARKS (WM_USER + 105)
 #define LNEM_SETLINEDELTA (WM_USER + 106)
-
+#define LNEM_SETCOLUMNWIDTH (WM_USER + 107)
+#define LNEM_GETCOLUMNWIDTH (WM_USER + 108)
 class LineNumEdit : public LineNumBase
 {
 public:
-    LineNumEdit(HWND hwnd = NULL) : LineNumBase(hwnd), m_num_digits(6)
+    LineNumEdit(HWND hwnd = NULL)
+        : LineNumBase(hwnd)
+        , m_num_digits(6)
+        , m_cxColumn(0)
     {
     }
 
@@ -315,7 +320,7 @@ public:
 
         RECT rcClient;
         ::GetClientRect(m_hwnd, &rcClient);
-        INT cxColumn = GetLineNumberColumnWidth();
+        INT cxColumn = GetColumnWidth();
         INT cyColumn = rcClient.bottom - rcClient.top;
 
         // get margins
@@ -324,7 +329,7 @@ public:
 
         // adjust rectangle
         RECT rcEdit = rcClient;
-        rcEdit.left += GetLineNumberColumnWidth() + leftmargin;
+        rcEdit.left += cxColumn;
         rcEdit.right -= rightmargin;
         Edit_SetRect(m_hwnd, &rcEdit);
 
@@ -385,7 +390,7 @@ public:
             SetLineNumberFormat(reinterpret_cast<LPCWSTR>(lParam));
             return 0;
         case LNEM_SETNUMOFDIGITS:
-            SetNumberOfDigits((INT)wParam);
+            SetNumberOfDigits(INT(wParam));
             return 0;
         case LNEM_SETBACKCOLOR:
             m_hwndStatic.SetBackColor(COLORREF(wParam));
@@ -408,6 +413,12 @@ public:
             m_hwndStatic.m_linedelta = INT(wParam);
             ::InvalidateRect(m_hwndStatic, NULL, FALSE);
             return 0;
+        case LNEM_SETCOLUMNWIDTH:
+            m_cxColumn = (INT)wParam;
+            Prepare();
+            return 0;
+        case LNEM_GETCOLUMNWIDTH:
+            return m_cxColumn;
         default:
             break;
         }
@@ -453,12 +464,14 @@ public:
 
     void SetNumberOfDigits(INT num = 6)
     {
+        m_cxColumn = 0;
         m_num_digits = num;
         Prepare();
     }
 
 protected:
     INT m_num_digits;
+    INT m_cxColumn;
     LineNumStatic m_hwndStatic;
 
     void OnEnable(HWND hwnd, BOOL fEnable)
@@ -531,21 +544,26 @@ protected:
         InvalidateRect(m_hwndStatic, NULL, FALSE);
     }
 
-    INT GetLineNumberColumnWidth()
+    INT GetColumnWidth()
     {
+        if (m_cxColumn)
+            return m_cxColumn;
+
         HFONT hFont = GetWindowFont(m_hwnd);
 
-        TEXTMETRICW tm;
+        SIZE siz;
         HDC hDC = ::GetDC(m_hwnd);
         HGDIOBJ hFontOld = ::SelectObject(hDC, hFont);
-        ::GetTextMetricsW(hDC, &tm);
+        ::GetTextExtentPoint32W(hDC, L"0", 1, &siz);
         ::SelectObject(hDC, hFontOld);
         ::ReleaseDC(m_hwnd, hDC);
 
+        // get margins
         DWORD dwMargins = SendMessageW(m_hwnd, EM_GETMARGINS, 0, 0);
-        INT leftmargin = LOWORD(dwMargins);
+        INT leftmargin = LOWORD(dwMargins), rightmargin = HIWORD(dwMargins);
 
-        return (m_num_digits * tm.tmAveCharWidth) + leftmargin;
+        m_cxColumn = leftmargin + (m_num_digits * siz.cx) + rightmargin + leftmargin;
+        return m_cxColumn;
     }
 
     INT GetLineNumberLineHeight()
