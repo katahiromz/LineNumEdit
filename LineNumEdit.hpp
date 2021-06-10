@@ -567,7 +567,7 @@ protected:
         return m_cxColumn;
     }
 
-    INT GetLineNumberLineHeight()
+    INT GetLineHeight()
     {
         HFONT hFont = GetWindowFont(m_hwnd);
 
@@ -589,7 +589,7 @@ protected:
 
         INT maxline = Edit_GetLineCount(m_hwnd);
 
-        INT lineheight = GetLineNumberLineHeight();
+        INT lineheight = GetLineHeight();
         if (lineheight == 0)
             return;
 
