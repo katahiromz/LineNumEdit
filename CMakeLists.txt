@@ -12,21 +12,20 @@ project(LineNumEdit CXX RC)
 ##############################################################################
 
 # main.exe uses superclassing?
-option(LINENUMEDIT_SUPERCLASSING "Use LineNumEdit superclassing" OFF)
+option(LINENUMEDIT_SUPERCLASSING "Use LineNumEdit superclassing" ON)
 if(LINENUMEDIT_SUPERCLASSING)
     add_definitions(-DLINENUMEDIT_SUPERCLASSING)
 endif()
 
-# Unicode support
-add_definitions(-DUNICODE -D_UNICODE)
-
 # LineNumEdit.dll
 add_library(LineNumEdit SHARED LineNumEdit.cpp)
+target_compile_definitions(LineNumEdit PRIVATE UNICODE _UNICODE)
 set_target_properties(LineNumEdit PROPERTIES PREFIX "")
 set_target_properties(LineNumEdit PROPERTIES OUTPUT_NAME "LineNumEdit")
 
 # main.exe
 add_executable(main WIN32 main.cpp main_res.rc)
 target_link_libraries(main comctl32)
+target_compile_definitions(main PRIVATE UNICODE _UNICODE)
 
 ##############################################################################

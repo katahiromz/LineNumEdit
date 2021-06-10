@@ -38,10 +38,10 @@ public:
     WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     {
         LineNumBase *pBase =
-            reinterpret_cast<LineNumBase *>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
+            reinterpret_cast<LineNumBase *>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
 
         if (!pBase)
-            return ::DefWindowProcW(hwnd, uMsg, wParam, lParam);
+            return ::DefWindowProc(hwnd, uMsg, wParam, lParam);
 
         return pBase->WindowProcDx(hwnd, uMsg, wParam, lParam);
     }
@@ -50,14 +50,14 @@ public:
     DefWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     {
         if (m_fnOldWndProc)
-            return ::CallWindowProcW(m_fnOldWndProc, hwnd, uMsg, wParam, lParam);
-        return ::DefWindowProcW(hwnd, uMsg, wParam, lParam);
+            return ::CallWindowProc(m_fnOldWndProc, hwnd, uMsg, wParam, lParam);
+        return ::DefWindowProc(hwnd, uMsg, wParam, lParam);
     }
 
     BOOL Attach(HWND hwnd)
     {
         assert(m_hwnd == NULL);
-        SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
+        SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
         m_fnOldWndProc = SubclassWindow(hwnd, LineNumBase::WindowProc);
         m_hwnd = hwnd;
         return TRUE;
@@ -65,7 +65,7 @@ public:
 
     HWND Detach()
     {
-        SetWindowLongPtrW(m_hwnd, GWLP_USERDATA, 0);
+        SetWindowLongPtr(m_hwnd, GWLP_USERDATA, 0);
         SubclassWindow(m_hwnd, m_fnOldWndProc);
         m_fnOldWndProc = NULL;
         HWND hwnd = m_hwnd;
@@ -90,7 +90,7 @@ public:
         , m_topline(0)
         , m_bottomline(0)
         , m_linedelta(1)
-        , m_format(L"%d")
+        , m_format(TEXT("%d"))
     {
     }
 
@@ -134,7 +134,7 @@ public:
         m_topmargin = topmargin;
     }
 
-    void SetLineNumberFormat(LPCWSTR format)
+    void SetLineNumberFormat(LPCTSTR format)
     {
         m_format = format;
         ::InvalidateRect(m_hwnd, NULL, TRUE);
@@ -147,7 +147,11 @@ protected:
     INT m_topline;
     INT m_bottomline;
     INT m_linedelta;
+#ifdef UNICODE
     std::wstring m_format;
+#else
+    std::string m_format;
+#endif
 
     HFONT GetFont() const
     {
@@ -158,8 +162,8 @@ protected:
     {
         HDC hDC = ::GetDC(m_hwnd);
         HGDIOBJ hFontOld = SelectObject(hDC, GetFont());
-        TEXTMETRICW tm;
-        ::GetTextMetricsW(hDC, &tm);
+        TEXTMETRIC tm;
+        ::GetTextMetrics(hDC, &tm);
         SelectObject(hDC, hFontOld);
         ::ReleaseDC(m_hwnd, hDC);
         return tm.tmAveCharWidth;
@@ -183,16 +187,16 @@ protected:
 
         // fill background
         UINT uMsg;
-        if (!::IsWindowEnabled(hwndEdit) || (GetWindowLongW(hwndEdit, GWL_STYLE) & ES_READONLY))
+        if (!::IsWindowEnabled(hwndEdit) || (GetWindowLong(hwndEdit, GWL_STYLE) & ES_READONLY))
             uMsg = WM_CTLCOLORSTATIC;
         else
             uMsg = WM_CTLCOLOREDIT;
 
-        HBRUSH hbr = (HBRUSH)SendMessageW(GetParent(hwndEdit), uMsg, (WPARAM)hDC, (LPARAM)hwndEdit);
+        HBRUSH hbr = (HBRUSH)SendMessage(GetParent(hwndEdit), uMsg, (WPARAM)hDC, (LPARAM)hwndEdit);
         ::FillRect(hdcMem, &rcClient, hbr);
 
         // get margins
-        DWORD dwMargins = SendMessageW(hwndEdit, EM_GETMARGINS, 0, 0);
+        DWORD dwMargins = SendMessage(hwndEdit, EM_GETMARGINS, 0, 0);
         INT leftmargin = LOWORD(dwMargins), rightmargin = HIWORD(dwMargins);
 
         // shrink rectangle
@@ -217,10 +221,10 @@ protected:
         if (m_bottomline)
         {
             SIZE siz;
-            GetTextExtentPoint32W(hdcMem, L"0", 1, &siz);
+            GetTextExtentPoint32(hdcMem, TEXT("0"), 1, &siz);
             INT cyLine = siz.cy;
 
-            WCHAR szText[32];
+            TCHAR szText[32];
             ::SetTextColor(hdcMem, m_rgbText);
             ::SetBkColor(hdcMem, m_rgbBack);
             ::SetBkMode(hdcMem, TRANSPARENT);
@@ -228,7 +232,7 @@ protected:
             {
                 INT yLine = m_topmargin + cyLine * (iLine - m_topline);
                 RECT rc = { 0, yLine, cx - 1, yLine + cyLine };
-                StringCchPrintfW(szText, _countof(szText), m_format.c_str(), iLine + m_linedelta);
+                StringCchPrintf(szText, _countof(szText), m_format.c_str(), iLine + m_linedelta);
 
                 auto it = m_line2color.find(iLine);
                 if (it != m_line2color.end())
@@ -240,7 +244,7 @@ protected:
                 }
                 rc.right -= rightmargin;
                 UINT uFormat = DT_RIGHT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX;
-                ::DrawTextW(hdcMem, szText, ::lstrlenW(szText), &rc, uFormat);
+                ::DrawText(hdcMem, szText, ::lstrlen(szText), &rc, uFormat);
             }
         }
         ::SelectObject(hdcMem, hFontOld);
@@ -271,7 +275,7 @@ protected:
         POINT pt = { rc.right + 1, y };
         HWND hwndEdit = GetParent(hwnd);
         MapWindowPoints(hwnd, hwndEdit, &pt, 1);
-        FORWARD_WM_LBUTTONDOWN(hwndEdit, fDoubleClick, pt.x, pt.y, keyFlags, SendMessageW);
+        FORWARD_WM_LBUTTONDOWN(hwndEdit, fDoubleClick, pt.x, pt.y, keyFlags, SendMessage);
     }
 
     void OnMouseMove(HWND hwnd, int x, int y, UINT keyFlags)
@@ -281,7 +285,7 @@ protected:
         POINT pt = { rc.right + 1, y };
         HWND hwndEdit = GetParent(hwnd);
         MapWindowPoints(hwnd, hwndEdit, &pt, 1);
-        FORWARD_WM_MOUSEMOVE(hwndEdit, pt.x, pt.y, keyFlags, SendMessageW);
+        FORWARD_WM_MOUSEMOVE(hwndEdit, pt.x, pt.y, keyFlags, SendMessage);
     }
 
     friend class LineNumEdit;
@@ -308,16 +312,16 @@ public:
     {
     }
 
-    static LPCWSTR SuperWndClassName()
+    static LPCTSTR SuperWndClassName()
     {
-        return L"LineNumEdit";
+        return TEXT("LineNumEdit");
     }
 
     void Prepare()
     {
         assert(::IsWindow(m_hwnd));
-        assert(!!(::GetWindowLongW(m_hwnd, GWL_STYLE) & WS_CHILD));
-        assert(!!(::GetWindowLongW(m_hwnd, GWL_STYLE) & ES_MULTILINE));
+        assert(!!(::GetWindowLong(m_hwnd, GWL_STYLE) & WS_CHILD));
+        assert(!!(::GetWindowLong(m_hwnd, GWL_STYLE) & ES_MULTILINE));
 
         RECT rcClient;
         ::GetClientRect(m_hwnd, &rcClient);
@@ -325,7 +329,7 @@ public:
         INT cyColumn = rcClient.bottom - rcClient.top;
 
         // get margins
-        DWORD dwMargins = SendMessageW(m_hwnd, EM_GETMARGINS, 0, 0);
+        DWORD dwMargins = SendMessage(m_hwnd, EM_GETMARGINS, 0, 0);
         INT leftmargin = LOWORD(dwMargins), rightmargin = HIWORD(dwMargins);
 
         // adjust rectangle
@@ -341,9 +345,9 @@ public:
         else
         {
             DWORD style = WS_CHILD | WS_VISIBLE | SS_NOTIFY;
-            HWND hwndStatic = ::CreateWindowW(L"STATIC", NULL, style,
+            HWND hwndStatic = ::CreateWindow(TEXT("STATIC"), NULL, style,
                 0, 0, cxColumn, cyColumn, m_hwnd, NULL,
-                GetModuleHandleW(NULL), NULL);
+                GetModuleHandle(NULL), NULL);
             m_hwndStatic.Attach(hwndStatic);
         }
 
@@ -362,10 +366,10 @@ public:
         m_hwndStatic.SetBackColor(::GetSysColor(COLOR_3DFACE));
     }
 
-    void SetLineNumberFormat(LPCWSTR format)
+    void SetLineNumberFormat(LPCTSTR format)
     {
         if (!format)
-            format = L"%d";
+            format = TEXT("%d");
         m_hwndStatic.SetLineNumberFormat(format);
         ::InvalidateRect(m_hwndStatic, NULL, TRUE);
     }
@@ -388,7 +392,7 @@ public:
         case EM_LINESCROLL:
             return OnLineScroll(hwnd, wParam, lParam);
         case LNEM_SETLINENUMFORMAT:
-            SetLineNumberFormat(reinterpret_cast<LPCWSTR>(lParam));
+            SetLineNumberFormat(reinterpret_cast<LPCTSTR>(lParam));
             return 0;
         case LNEM_SETNUMOFDIGITS:
             SetNumberOfDigits(INT(wParam));
@@ -441,7 +445,7 @@ public:
         if (uMsg == WM_NCDESTROY)
         {
             LineNumBase *pBase =
-                reinterpret_cast<LineNumBase *>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
+                reinterpret_cast<LineNumBase *>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
             delete pBase;
         }
 
@@ -453,12 +457,12 @@ public:
         static WNDPROC s_fnOldWndProc = NULL;
         if (s_fnOldWndProc)
             return s_fnOldWndProc;
-        WNDCLASSEXW wcx = { sizeof(wcx) };
-        ::GetClassInfoExW(::GetModuleHandleW(NULL), L"EDIT", &wcx);
+        WNDCLASSEX wcx = { sizeof(wcx) };
+        ::GetClassInfoEx(::GetModuleHandle(NULL), TEXT("EDIT"), &wcx);
         s_fnOldWndProc = wcx.lpfnWndProc;
         wcx.lpszClassName = LineNumEdit::SuperWndClassName();
         wcx.lpfnWndProc = LineNumEdit::SuperclassWndProc;
-        if (::RegisterClassExW(&wcx))
+        if (::RegisterClassEx(&wcx))
             return s_fnOldWndProc;
         return NULL;
     }
@@ -477,13 +481,13 @@ protected:
 
     void OnEnable(HWND hwnd, BOOL fEnable)
     {
-        SetWindowColor(fEnable && !(GetWindowLongW(hwnd, GWL_STYLE) & ES_READONLY));
+        SetWindowColor(fEnable && !(GetWindowLong(hwnd, GWL_STYLE) & ES_READONLY));
     }
 
     void OnSysColorChange(HWND hwnd)
     {
         DefWndProc(hwnd, WM_SYSCOLORCHANGE, 0, 0);
-        SetWindowColor(::IsWindowEnabled(hwnd) && !(GetWindowLongW(hwnd, GWL_STYLE) & ES_READONLY));
+        SetWindowColor(::IsWindowEnabled(hwnd) && !(GetWindowLong(hwnd, GWL_STYLE) & ES_READONLY));
     }
 
     void OnVScroll(HWND hwnd, HWND hwndCtl, UINT code, int pos)
@@ -555,12 +559,12 @@ protected:
         SIZE siz;
         HDC hDC = ::GetDC(m_hwnd);
         HGDIOBJ hFontOld = ::SelectObject(hDC, hFont);
-        ::GetTextExtentPoint32W(hDC, L"0", 1, &siz);
+        ::GetTextExtentPoint32(hDC, TEXT("0"), 1, &siz);
         ::SelectObject(hDC, hFontOld);
         ::ReleaseDC(m_hwnd, hDC);
 
         // get margins
-        DWORD dwMargins = SendMessageW(m_hwnd, EM_GETMARGINS, 0, 0);
+        DWORD dwMargins = SendMessage(m_hwnd, EM_GETMARGINS, 0, 0);
         INT leftmargin = LOWORD(dwMargins), rightmargin = HIWORD(dwMargins);
 
         m_cxColumn = leftmargin + (m_num_digits * siz.cx) + rightmargin + leftmargin;
@@ -571,10 +575,10 @@ protected:
     {
         HFONT hFont = GetWindowFont(m_hwnd);
 
-        TEXTMETRICW tm;
+        TEXTMETRIC tm;
         HDC hDC = ::GetDC(m_hwnd);
         HGDIOBJ hFontOld = ::SelectObject(hDC, hFont);
-        ::GetTextMetricsW(hDC, &tm);
+        ::GetTextMetrics(hDC, &tm);
         ::SelectObject(hDC, hFontOld);
         ::ReleaseDC(m_hwnd, hDC);
 
