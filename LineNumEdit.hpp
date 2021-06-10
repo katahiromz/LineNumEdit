@@ -10,7 +10,6 @@
 #ifndef _INC_SHLWAPI
     #include <shlwapi.h>
 #endif
-#include <tchar.h>
 
 // messages for LineNumEdit
 #define LNEM_SETLINENUMFORMAT (WM_USER + 100)

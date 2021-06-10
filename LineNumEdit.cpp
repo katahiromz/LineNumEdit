@@ -1,5 +1,4 @@
 #include "LineNumEdit.hpp"
-#include <cstring>
 
 LineNumStatic::LineNumStatic(HWND hwnd)
     : LineNumBase(hwnd)
