@@ -156,8 +156,6 @@ LineNumEdit::WindowProcDx(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         HANDLE_MSG(hwnd, WM_KEYDOWN, OnKey);
         HANDLE_MSG(hwnd, WM_KEYUP, OnKey);
         HANDLE_MSG(hwnd, WM_MOUSEWHEEL, OnMouseWheel);
-    case EM_LINESCROLL:
-        return OnLineScroll(hwnd, wParam, lParam);
     case LNEM_SETLINENUMFORMAT:
         SetLineNumberFormat(reinterpret_cast<LPCTSTR>(lParam));
         return 0;
@@ -188,6 +186,20 @@ LineNumEdit::WindowProcDx(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         return 0;
     case LNEM_GETCOLUMNWIDTH:
         return m_cxColumn;
+    case EM_SETREADONLY:
+        {
+            LRESULT ret = DefWndProc(hwnd, uMsg, wParam, lParam);
+            RefreshColors();
+            return ret;
+        }
+    case EM_SCROLL: case EM_SCROLLCARET: case EM_LINESCROLL:
+    case EM_REPLACESEL: case EM_SETHANDLE: case EM_SETMARGINS:
+    case WM_CUT: case WM_PASTE: case WM_UNDO: case EM_UNDO:
+        {
+            LRESULT ret = DefWndProc(hwnd, uMsg, wParam, lParam);
+            UpdateTopAndBottom();
+            return ret;
+        }
     default:
         break;
     }

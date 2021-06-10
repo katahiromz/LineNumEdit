@@ -318,13 +318,6 @@ protected:
         UpdateTopAndBottom();
     }
 
-    LRESULT OnLineScroll(HWND hwnd, WPARAM wParam, LPARAM lParam)
-    {
-        LRESULT ret = DefWndProc(hwnd, EM_LINESCROLL, wParam, lParam);
-        UpdateTopAndBottom();
-        return ret;
-    }
-
     void OnChar(HWND hwnd, TCHAR ch, int cRepeat)
     {
         FORWARD_WM_CHAR(hwnd, ch, cRepeat, DefWndProc);
