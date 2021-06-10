@@ -125,7 +125,7 @@ void LineNumEdit::Prepare()
     rcEdit.right -= rightmargin;
     Edit_SetRect(m_hwnd, &rcEdit);
 
-    if (m_hwndStatic)
+    if (::IsWindow(m_hwndStatic))
     {
         ::MoveWindow(m_hwndStatic, 0, 0, cxColumn, cyColumn, TRUE);
     }
@@ -170,7 +170,8 @@ LineNumEdit::WindowProcDx(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         {
             LPCTSTR pszName = m_hwndStatic.GetPropName(INT(wParam));
             ::RemoveProp(m_hwndStatic, pszName);
-            if (COLORREF(lParam) != CLR_INVALID && COLORREF(lParam) != CLR_NONE)
+            COLORREF rgb = COLORREF(lParam);
+            if (rgb != CLR_INVALID && rgb != CLR_NONE)
                 ::SetProp(m_hwndStatic, pszName, reinterpret_cast<HANDLE>(lParam));
         }
         m_hwndStatic.Redraw();
@@ -206,14 +207,12 @@ LineNumEdit::SuperclassWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
     }
 
     LRESULT ret = LineNumBase::WindowProc(hwnd, uMsg, wParam, lParam);
-
     if (uMsg == WM_NCDESTROY)
     {
         LineNumBase *pBase =
             reinterpret_cast<LineNumBase *>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
         delete pBase;
     }
-
     return ret;
 }
 
@@ -222,11 +221,9 @@ INT LineNumEdit::GetColumnWidth()
     if (m_cxColumn)
         return m_cxColumn;
 
-    HFONT hFont = GetWindowFont(m_hwnd);
-
     SIZE siz;
     HDC hDC = ::GetDC(m_hwnd);
-    HGDIOBJ hFontOld = ::SelectObject(hDC, hFont);
+    HGDIOBJ hFontOld = ::SelectObject(hDC, GetWindowFont(m_hwnd));
     ::GetTextExtentPoint32(hDC, TEXT("0"), 1, &siz);
     ::SelectObject(hDC, hFontOld);
     ::ReleaseDC(m_hwnd, hDC);
@@ -244,14 +241,13 @@ void LineNumEdit::UpdateTopAndBottom()
     RECT rcClient;
     ::GetClientRect(m_hwnd, &rcClient);
 
-    INT maxline = Edit_GetLineCount(m_hwnd);
-
     INT lineheight = m_hwndStatic.GetLineHeight();
     if (lineheight == 0)
         return;
 
     INT cyClient = rcClient.bottom - rcClient.top;
     INT topline = Edit_GetFirstVisibleLine(m_hwnd);
+    INT maxline = Edit_GetLineCount(m_hwnd);
     if (topline + (cyClient / lineheight) < maxline)
         maxline = topline + ((cyClient + lineheight - 1) / lineheight);
 

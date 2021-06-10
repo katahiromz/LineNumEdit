@@ -162,7 +162,7 @@ protected:
         ::GetTextMetrics(hDC, &tm);
         SelectObject(hDC, hFontOld);
         ::ReleaseDC(m_hwnd, hDC);
-        return tm.tmAveCharWidth;
+        return tm.tmHeight;
     }
 
     LPCTSTR GetPropName(INT iLine) const
