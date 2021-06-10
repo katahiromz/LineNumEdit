@@ -303,14 +303,10 @@ public:
         DWORD dwMargins = SendMessageW(m_hwnd, EM_GETMARGINS, 0, 0);
         INT leftmargin = LOWORD(dwMargins), rightmargin = HIWORD(dwMargins);
 
-        // get client area
-        RECT rcEdit;
-        GetClientRect(m_hwnd, &rcEdit);
-
         // adjust rectangle
-        rcEdit.left += leftmargin;
+        RECT rcEdit = rcClient;
+        rcEdit.left += GetLineNumberColumnWidth() + leftmargin;
         rcEdit.right -= rightmargin;
-        rcEdit.left += GetLineNumberColumnWidth();
         Edit_SetRect(m_hwnd, &rcEdit);
 
         if (m_hwndStatic)
