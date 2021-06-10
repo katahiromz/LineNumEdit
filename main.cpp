@@ -47,7 +47,11 @@ WinMain(HINSTANCE   hInstance,
         INT         nCmdShow)
 {
     InitCommonControls();
+#ifdef LINENUMEDIT_DLL
     LoadLibrary(TEXT("LineNumEdit"));
+#else
+    LineNumEdit::SuperclassWindow();
+#endif
     DialogBox(hInstance, MAKEINTRESOURCE(IDD_MAIN), NULL, DialogProc);
     return 0;
 }

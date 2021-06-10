@@ -285,6 +285,7 @@ WNDPROC LineNumEdit::SuperclassWindow()
     return NULL;
 }
 
+#ifdef LINENUMEDIT_DLL
 BOOL WINAPI
 DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 {
@@ -293,3 +294,4 @@ DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 
     return TRUE;
 }
+#endif
