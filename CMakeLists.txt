@@ -12,7 +12,7 @@ project(LineNumEdit CXX RC)
 ##############################################################################
 
 # main.exe uses dll?
-option(USE_DLL "Use DLL" ON)
+option(USE_DLL "Use DLL" OFF)
 if(USE_DLL)
     add_definitions(-DUSE_DLL)
 endif()

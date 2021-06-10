@@ -264,7 +264,7 @@ protected:
 class LineNumEdit : public LineNumBase
 {
 public:
-    LineNumEdit(HWND hwnd = NULL) : m_linedelta(1)
+    LineNumEdit(HWND hwnd = NULL) : m_linedelta(1), m_num_digits(6)
     {
         if (hwnd)
             Attach(hwnd);
@@ -287,8 +287,17 @@ public:
         INT cxColumn = GetLineNumberColumnWidth();
         INT cyColumn = rcClient.bottom - rcClient.top;
 
+        // get margins
+        DWORD dwMargins = SendMessageW(m_hwnd, EM_GETMARGINS, 0, 0);
+        INT leftmargin = LOWORD(dwMargins), rightmargin = HIWORD(dwMargins);
+
+        // get client area
         RECT rcEdit;
-        Edit_GetRect(m_hwnd, &rcEdit);
+        GetClientRect(m_hwnd, &rcEdit);
+
+        // adjust rectangle
+        rcEdit.left += leftmargin;
+        rcEdit.right -= rightmargin;
         rcEdit.left += GetLineNumberColumnWidth();
         Edit_SetRect(m_hwnd, &rcEdit);
 
@@ -386,8 +395,15 @@ public:
         return NULL;
     }
 
+    void SetNumberOfDigits(INT num = 6)
+    {
+        m_num_digits = num;
+        Prepare();
+    }
+
 protected:
     INT m_linedelta;
+    INT m_num_digits;
     LineNumStatic m_hwndStatic;
 
     void OnEnable(HWND hwnd, BOOL fEnable)
@@ -474,7 +490,7 @@ protected:
         DWORD dwMargins = SendMessageW(m_hwnd, EM_GETMARGINS, 0, 0);
         INT leftmargin = LOWORD(dwMargins);
 
-        return 6 * tm.tmAveCharWidth + 1 + leftmargin;
+        return m_num_digits * tm.tmAveCharWidth + 1 + leftmargin;
     }
 
     INT GetLineNumberLineHeight()
