@@ -94,8 +94,6 @@ protected:
 class LineNumStatic : public LineNumBase
 {
 public:
-    std::map<INT, COLORREF> m_line2color;
-
     LineNumStatic(HWND hwnd = NULL);
 
     LRESULT CALLBACK
@@ -145,6 +143,7 @@ protected:
 #else
     std::string m_format;
 #endif
+    std::map<INT, COLORREF> m_line2color;
 
     HFONT GetFont() const
     {
