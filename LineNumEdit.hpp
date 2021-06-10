@@ -286,6 +286,7 @@ protected:
     friend class LineNumEdit;
 };
 
+// messages for LineNumEdit
 #define LNEM_SETLINENUMFORMAT (WM_USER + 100)
 #define LNEM_SETNUMOFDIGITS (WM_USER + 101)
 #define LNEM_SETBACKCOLOR (WM_USER + 102)
