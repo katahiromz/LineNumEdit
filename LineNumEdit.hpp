@@ -143,7 +143,7 @@ protected:
     INT m_topline;
     INT m_bottomline;
     INT m_linedelta;
-    LPTSTR m_format;
+    LPWSTR m_format;
 
     HWND GetEdit() const
     {

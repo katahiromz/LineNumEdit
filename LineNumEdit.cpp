@@ -75,7 +75,7 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC, RECT& rcClient)
     HGDIOBJ hFontOld = ::SelectObject(hdcMem, hFont);
     if (m_bottomline)
     {
-        TCHAR szText[32];
+        WCHAR szText[32];
         ::SetTextColor(hdcMem, m_rgbText);
         ::SetBkMode(hdcMem, TRANSPARENT);
         INT cyLine = GetLineHeight();
@@ -84,7 +84,7 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC, RECT& rcClient)
             INT yLine = m_topmargin + cyLine * (iLine - m_topline);
             RECT rc = { 0, yLine, cx - 1, yLine + cyLine };
             INT nLineNo = iLine + m_linedelta;
-            StringCchPrintf(szText, _countof(szText), m_format, nLineNo);
+            StringCchPrintfW(szText, _countof(szText), m_format, nLineNo);
 
             if (HANDLE hProp = ::GetProp(hwnd, GetPropName(nLineNo)))
             {
@@ -96,7 +96,7 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC, RECT& rcClient)
 
             rc.right -= rightmargin;
             UINT uFormat = DT_RIGHT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX;
-            ::DrawText(hdcMem, szText, ::lstrlen(szText), &rc, uFormat);
+            ::DrawTextW(hdcMem, szText, ::lstrlenW(szText), &rc, uFormat);
         }
     }
     ::SelectObject(hdcMem, hFontOld);
