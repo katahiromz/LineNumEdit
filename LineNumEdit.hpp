@@ -244,20 +244,7 @@ public:
     static LRESULT CALLBACK
     SuperclassWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
-    static WNDPROC SuperclassWindow()
-    {
-        static WNDPROC s_fnOldWndProc = NULL;
-        if (s_fnOldWndProc)
-            return s_fnOldWndProc;
-        WNDCLASSEX wcx = { sizeof(wcx) };
-        ::GetClassInfoEx(::GetModuleHandle(NULL), TEXT("EDIT"), &wcx);
-        s_fnOldWndProc = wcx.lpfnWndProc;
-        wcx.lpszClassName = LineNumEdit::SuperWndClassName();
-        wcx.lpfnWndProc = LineNumEdit::SuperclassWndProc;
-        if (::RegisterClassEx(&wcx))
-            return s_fnOldWndProc;
-        return NULL;
-    }
+    static WNDPROC SuperclassWindow();
 
     void SetNumberOfDigits(INT num = 6)
     {

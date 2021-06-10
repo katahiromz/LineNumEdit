@@ -264,6 +264,21 @@ void LineNumEdit::UpdateTopAndBottom()
     m_hwndStatic.SetTopAndBottom(topline, maxline);
 }
 
+WNDPROC LineNumEdit::SuperclassWindow()
+{
+    static WNDPROC s_fnOldWndProc = NULL;
+    if (s_fnOldWndProc)
+        return s_fnOldWndProc;
+    WNDCLASSEX wcx = { sizeof(wcx) };
+    ::GetClassInfoEx(::GetModuleHandle(NULL), TEXT("EDIT"), &wcx);
+    s_fnOldWndProc = wcx.lpfnWndProc;
+    wcx.lpszClassName = LineNumEdit::SuperWndClassName();
+    wcx.lpfnWndProc = LineNumEdit::SuperclassWndProc;
+    if (::RegisterClassEx(&wcx))
+        return s_fnOldWndProc;
+    return NULL;
+}
+
 BOOL WINAPI
 DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 {
