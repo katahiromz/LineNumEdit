@@ -3,14 +3,14 @@
 #include <commctrl.h>
 #include "resource.h"
 
-#ifndef USE_DLL
+#ifndef LINENUMEDIT_SUPERCLASSING
     #include "LineNumEdit.hpp"
     static LineNumEdit s_hwndEdit;
 #endif
 
 BOOL OnInitDialog(HWND hwnd, HWND hwndFocus, LPARAM lParam)
 {
-#ifndef USE_DLL
+#ifndef LINENUMEDIT_SUPERCLASSING
     s_hwndEdit.Attach(GetDlgItem(hwnd, edt1));
     s_hwndEdit.Prepare();
 #endif
@@ -46,7 +46,7 @@ WinMain(HINSTANCE   hInstance,
         INT         nCmdShow)
 {
     InitCommonControls();
-#ifdef USE_DLL
+#ifdef LINENUMEDIT_SUPERCLASSING
     LoadLibraryA("LineNumEdit");
 #endif
     DialogBoxW(hInstance, MAKEINTRESOURCEW(IDD_MAIN), NULL, DialogProc);

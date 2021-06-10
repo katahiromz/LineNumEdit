@@ -11,10 +11,10 @@ project(LineNumEdit CXX RC)
 
 ##############################################################################
 
-# main.exe uses dll?
-option(USE_DLL "Use DLL" OFF)
-if(USE_DLL)
-    add_definitions(-DUSE_DLL)
+# main.exe uses superclassing?
+option(LINENUMEDIT_SUPERCLASSING "Use LineNumEdit superclassing" ON)
+if(LINENUMEDIT_SUPERCLASSING)
+    add_definitions(-DLINENUMEDIT_SUPERCLASSING)
 endif()
 
 # Unicode support
