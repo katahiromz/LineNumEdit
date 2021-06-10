@@ -235,7 +235,7 @@ class LineNumEdit : public LineNumBase
 public:
     LineNumEdit(HWND hwnd = NULL)
         : LineNumBase(hwnd)
-        , m_num_digits(6)
+        , m_num_digits(4)
         , m_cxColumn(0)
     {
     }
@@ -271,7 +271,7 @@ public:
 
     static WNDPROC SuperclassWindow();
 
-    void SetNumberOfDigits(INT num = 6)
+    void SetNumberOfDigits(INT num = 4)
     {
         m_cxColumn = 0;
         m_num_digits = num;
