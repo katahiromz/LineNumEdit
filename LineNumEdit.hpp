@@ -14,13 +14,11 @@
 // messages for LineNumEdit
 #define LNEM_SETLINENUMFORMAT (WM_USER + 100)
 #define LNEM_SETNUMOFDIGITS (WM_USER + 101)
-#define LNEM_SETBACKCOLOR (WM_USER + 102)
-#define LNEM_SETTEXTCOLOR (WM_USER + 103)
-#define LNEM_SETLINEMARK (WM_USER + 104)
-#define LNEM_CLEARLINEMARKS (WM_USER + 105)
-#define LNEM_SETLINEDELTA (WM_USER + 106)
-#define LNEM_SETCOLUMNWIDTH (WM_USER + 107)
-#define LNEM_GETCOLUMNWIDTH (WM_USER + 108)
+#define LNEM_SETLINEMARK (WM_USER + 102)
+#define LNEM_CLEARLINEMARKS (WM_USER + 103)
+#define LNEM_SETLINEDELTA (WM_USER + 104)
+#define LNEM_SETCOLUMNWIDTH (WM_USER + 105)
+#define LNEM_GETCOLUMNWIDTH (WM_USER + 106)
 
 #ifdef LINENUMEDIT_IMPL
 
@@ -30,7 +28,6 @@
 class LineNumBase
 {
 public:
-    HWND m_hwnd;
     operator HWND() const
     {
         return m_hwnd;
@@ -55,10 +52,10 @@ public:
         LineNumBase *pBase =
             reinterpret_cast<LineNumBase *>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
 
-        if (!pBase)
-            return ::DefWindowProc(hwnd, uMsg, wParam, lParam);
+        if (pBase)
+            return pBase->WindowProcDx(hwnd, uMsg, wParam, lParam);
 
-        return pBase->WindowProcDx(hwnd, uMsg, wParam, lParam);
+        return ::DefWindowProc(hwnd, uMsg, wParam, lParam);
     }
 
     LRESULT CALLBACK
@@ -88,7 +85,13 @@ public:
         return hwnd;
     }
 
+    void Redraw(BOOL bErase = FALSE)
+    {
+        ::InvalidateRect(m_hwnd, NULL, bErase);
+    }
+
 protected:
+    HWND m_hwnd;
     WNDPROC m_fnOldWndProc;
 };
 
@@ -96,6 +99,7 @@ class LineNumStatic : public LineNumBase
 {
 public:
     LineNumStatic(HWND hwnd = NULL);
+
     ~LineNumStatic()
     {
         CoTaskMemFree(m_format);
@@ -104,25 +108,19 @@ public:
     LRESULT CALLBACK
     WindowProcDx(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) override;
 
-    void SetTextColor(COLORREF rgb, BOOL redraw = TRUE)
+    void SetColors(INT text, INT back, BOOL redraw = TRUE)
     {
-        m_rgbText = rgb;
+        m_rgbText = ::GetSysColor(text);
+        m_rgbBack = ::GetSysColor(back);
         if (redraw)
-            ::InvalidateRect(m_hwnd, NULL, TRUE);
-    }
-
-    void SetBackColor(COLORREF rgb, BOOL redraw = TRUE)
-    {
-        m_rgbBack = rgb;
-        if (redraw)
-            ::InvalidateRect(m_hwnd, NULL, TRUE);
+            Redraw();
     }
 
     void SetTopAndBottom(INT topline, INT bottomline)
     {
         m_topline = topline;
         m_bottomline = bottomline;
-        ::InvalidateRect(m_hwnd, NULL, TRUE);
+        Redraw();
     }
 
     void SetTopMargin(INT topmargin)
@@ -134,7 +132,7 @@ public:
     {
         CoTaskMemFree(m_format);
         SHStrDup(format, &m_format);
-        ::InvalidateRect(m_hwnd, NULL, TRUE);
+        Redraw();
     }
 
 protected:
@@ -146,9 +144,14 @@ protected:
     INT m_linedelta;
     LPTSTR m_format;
 
+    HWND GetEdit() const
+    {
+        return ::GetParent(m_hwnd);
+    }
+
     HFONT GetFont() const
     {
-        return (HFONT)GetWindowFont(::GetParent(m_hwnd));
+        return (HFONT)GetWindowFont(GetEdit());
     }
 
     INT GetLineHeight() const
@@ -213,7 +216,7 @@ protected:
         RECT rc;
         GetClientRect(hwnd, &rc);
         POINT pt = { rc.right + 1, y };
-        HWND hwndEdit = GetParent(hwnd);
+        HWND hwndEdit = GetEdit();
         MapWindowPoints(hwnd, hwndEdit, &pt, 1);
         FORWARD_WM_LBUTTONDOWN(hwndEdit, fDoubleClick, pt.x, pt.y, keyFlags, SendMessage);
     }
@@ -223,7 +226,7 @@ protected:
         RECT rc;
         GetClientRect(hwnd, &rc);
         POINT pt = { rc.right + 1, y };
-        HWND hwndEdit = GetParent(hwnd);
+        HWND hwndEdit = GetEdit();
         MapWindowPoints(hwnd, hwndEdit, &pt, 1);
         FORWARD_WM_MOUSEMOVE(hwndEdit, pt.x, pt.y, keyFlags, SendMessage);
     }
@@ -248,14 +251,12 @@ public:
 
     void Prepare();
 
-    void SetWindowColor(BOOL fEnable)
+    void RefreshColors()
     {
-        if (fEnable)
-            m_hwndStatic.SetTextColor(::GetSysColor(COLOR_WINDOWTEXT));
+        if (::IsWindowEnabled(m_hwnd) && !(GetWindowLong(m_hwnd, GWL_STYLE) & ES_READONLY))
+            m_hwndStatic.SetColors(COLOR_WINDOWTEXT, COLOR_3DFACE);
         else
-            m_hwndStatic.SetTextColor(::GetSysColor(COLOR_GRAYTEXT));
-
-        m_hwndStatic.SetBackColor(::GetSysColor(COLOR_3DFACE));
+            m_hwndStatic.SetColors(COLOR_GRAYTEXT, COLOR_3DFACE);
     }
 
     void SetLineNumberFormat(LPCTSTR format)
@@ -263,7 +264,7 @@ public:
         if (!format)
             format = TEXT("%d");
         m_hwndStatic.SetLineNumberFormat(format);
-        ::InvalidateRect(m_hwndStatic, NULL, TRUE);
+        m_hwndStatic.Redraw();
     }
 
     LRESULT CALLBACK
@@ -288,13 +289,14 @@ protected:
 
     void OnEnable(HWND hwnd, BOOL fEnable)
     {
-        SetWindowColor(fEnable && !(GetWindowLong(hwnd, GWL_STYLE) & ES_READONLY));
+        FORWARD_WM_ENABLE(hwnd, fEnable, DefWndProc);
+        RefreshColors();
     }
 
     void OnSysColorChange(HWND hwnd)
     {
-        DefWndProc(hwnd, WM_SYSCOLORCHANGE, 0, 0);
-        SetWindowColor(::IsWindowEnabled(hwnd) && !(GetWindowLong(hwnd, GWL_STYLE) & ES_READONLY));
+        FORWARD_WM_SYSCOLORCHANGE(hwnd, DefWndProc);
+        RefreshColors();
     }
 
     void OnVScroll(HWND hwnd, HWND hwndCtl, UINT code, int pos)
@@ -332,7 +334,7 @@ protected:
     {
         FORWARD_WM_CHAR(hwnd, ch, cRepeat, DefWndProc);
         UpdateTopAndBottom();
-        InvalidateRect(m_hwndStatic, NULL, FALSE);
+        m_hwndStatic.Redraw();
     }
 
     void OnKey(HWND hwnd, UINT vk, BOOL fDown, int cRepeat, UINT flags)
@@ -342,7 +344,7 @@ protected:
         else
             FORWARD_WM_KEYUP(hwnd, vk, cRepeat, flags, DefWndProc);
         UpdateTopAndBottom();
-        InvalidateRect(m_hwndStatic, NULL, FALSE);
+        m_hwndStatic.Redraw();
     }
 
 #undef FORWARD_WM_MOUSEWHEEL
@@ -353,11 +355,10 @@ protected:
     {
         FORWARD_WM_MOUSEWHEEL(hwnd, xPos, yPos, zDelta, fwKeys, DefWndProc);
         UpdateTopAndBottom();
-        InvalidateRect(m_hwndStatic, NULL, FALSE);
+        m_hwndStatic.Redraw();
     }
 
     INT GetColumnWidth();
-
     void UpdateTopAndBottom();
 };
 

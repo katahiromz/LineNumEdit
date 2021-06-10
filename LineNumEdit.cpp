@@ -75,16 +75,14 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC, RECT& rcClient)
     {
         SIZE siz;
         GetTextExtentPoint32(hdcMem, TEXT("0"), 1, &siz);
-        INT cyLine = siz.cy;
 
         TCHAR szText[32];
         ::SetTextColor(hdcMem, m_rgbText);
-        ::SetBkColor(hdcMem, m_rgbBack);
         ::SetBkMode(hdcMem, TRANSPARENT);
         for (INT iLine = m_topline; iLine < m_bottomline; ++iLine)
         {
-            INT yLine = m_topmargin + cyLine * (iLine - m_topline);
-            RECT rc = { 0, yLine, cx - 1, yLine + cyLine };
+            INT yLine = m_topmargin + siz.cy * (iLine - m_topline);
+            RECT rc = { 0, yLine, cx - 1, yLine + siz.cy };
             StringCchPrintf(szText, _countof(szText), m_format, iLine + m_linedelta);
 
             if (HANDLE hProp = ::GetProp(hwnd, GetPropName(iLine)))
@@ -102,8 +100,7 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC, RECT& rcClient)
     }
     ::SelectObject(hdcMem, hFontOld);
 
-    ::BitBlt(hDC, 0, 0, rcClient.right, rcClient.bottom,
-             hdcMem, 0, 0, SRCCOPY);
+    ::BitBlt(hDC, 0, 0, rcClient.right, rcClient.bottom, hdcMem, 0, 0, SRCCOPY);
     ::SelectObject(hdcMem, hbmOld);
 }
 
@@ -169,12 +166,6 @@ LineNumEdit::WindowProcDx(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     case LNEM_SETNUMOFDIGITS:
         SetNumberOfDigits(INT(wParam));
         return 0;
-    case LNEM_SETBACKCOLOR:
-        m_hwndStatic.SetBackColor(COLORREF(wParam));
-        return 0;
-    case LNEM_SETTEXTCOLOR:
-        m_hwndStatic.SetTextColor(COLORREF(wParam));
-        return 0;
     case LNEM_SETLINEMARK:
         {
             LPCTSTR pszName = m_hwndStatic.GetPropName(INT(wParam));
@@ -182,15 +173,15 @@ LineNumEdit::WindowProcDx(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             if (COLORREF(lParam) != CLR_INVALID && COLORREF(lParam) != CLR_NONE)
                 ::SetProp(m_hwndStatic, pszName, reinterpret_cast<HANDLE>(lParam));
         }
-        ::InvalidateRect(m_hwndStatic, NULL, FALSE);
+        m_hwndStatic.Redraw();
         return 0;
     case LNEM_CLEARLINEMARKS:
         m_hwndStatic.DeleteProps(m_hwndStatic);
-        ::InvalidateRect(m_hwndStatic, NULL, FALSE);
+        m_hwndStatic.Redraw();
         return 0;
     case LNEM_SETLINEDELTA:
         m_hwndStatic.m_linedelta = INT(wParam);
-        ::InvalidateRect(m_hwndStatic, NULL, FALSE);
+        m_hwndStatic.Redraw();
         return 0;
     case LNEM_SETCOLUMNWIDTH:
         m_cxColumn = (INT)wParam;
@@ -252,7 +243,6 @@ void LineNumEdit::UpdateTopAndBottom()
 {
     RECT rcClient;
     ::GetClientRect(m_hwnd, &rcClient);
-    INT cyClient = rcClient.bottom - rcClient.top;
 
     INT maxline = Edit_GetLineCount(m_hwnd);
 
@@ -260,6 +250,7 @@ void LineNumEdit::UpdateTopAndBottom()
     if (lineheight == 0)
         return;
 
+    INT cyClient = rcClient.bottom - rcClient.top;
     INT topline = Edit_GetFirstVisibleLine(m_hwnd);
     if (topline + (cyClient / lineheight) < maxline)
         maxline = topline + ((cyClient + lineheight - 1) / lineheight);
@@ -272,8 +263,11 @@ WNDPROC LineNumEdit::SuperclassWindow()
     static WNDPROC s_fnOldWndProc = NULL;
     if (s_fnOldWndProc)
         return s_fnOldWndProc;
+
     WNDCLASSEX wcx = { sizeof(wcx) };
-    ::GetClassInfoEx(::GetModuleHandle(NULL), TEXT("EDIT"), &wcx);
+    if (!::GetClassInfoEx(::GetModuleHandle(NULL), TEXT("EDIT"), &wcx))
+        return NULL;
+
     s_fnOldWndProc = wcx.lpfnWndProc;
     wcx.lpszClassName = LineNumEdit::SuperWndClassName();
     wcx.lpfnWndProc = LineNumEdit::SuperclassWndProc;
@@ -285,13 +279,8 @@ WNDPROC LineNumEdit::SuperclassWindow()
 BOOL WINAPI
 DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 {
-    switch (fdwReason)
-    {
-    case DLL_PROCESS_ATTACH:
-        LineNumEdit::SuperclassWindow();
-        break;
-    case DLL_PROCESS_DETACH:
-        break;
-    }
+    if (fdwReason == DLL_PROCESS_ATTACH)
+        return LineNumEdit::SuperclassWindow() != NULL;
+
     return TRUE;
 }
