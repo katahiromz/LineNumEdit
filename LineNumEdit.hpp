@@ -297,6 +297,7 @@ protected:
 #define LNEM_SETLINEDELTA (WM_USER + 106)
 #define LNEM_SETCOLUMNWIDTH (WM_USER + 107)
 #define LNEM_GETCOLUMNWIDTH (WM_USER + 108)
+
 class LineNumEdit : public LineNumBase
 {
 public:
