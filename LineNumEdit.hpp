@@ -4,7 +4,9 @@
 #ifndef _INC_WINDOWSX
     #include <windowsx.h>
 #endif
-#include <commctrl.h>
+#ifndef _INC_COMMCTRL
+    #include <commctrl.h>
+#endif
 #include <string>
 #include <strsafe.h>
 #include <cassert>
