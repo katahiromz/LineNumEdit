@@ -498,7 +498,7 @@ protected:
         DWORD dwMargins = SendMessageW(m_hwnd, EM_GETMARGINS, 0, 0);
         INT leftmargin = LOWORD(dwMargins);
 
-        return m_num_digits * tm.tmAveCharWidth + 1 + leftmargin;
+        return (m_num_digits * tm.tmAveCharWidth) + leftmargin;
     }
 
     INT GetLineNumberLineHeight()
