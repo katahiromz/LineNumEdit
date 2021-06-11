@@ -5,8 +5,6 @@ LineNumStatic::LineNumStatic(HWND hwnd)
     , m_rgbText(::GetSysColor(COLOR_WINDOWTEXT))
     , m_rgbBack(::GetSysColor(COLOR_3DFACE))
     , m_topmargin(0)
-    , m_topline(0)
-    , m_bottomline(0)
     , m_linedelta(1)
 {
     SHStrDup(TEXT("%d"), &m_format);
@@ -25,6 +23,19 @@ LineNumStatic::WindowProcDx(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         HANDLE_MSG(hwnd, WM_DESTROY, OnDestroy);
     }
     return DefWndProc(hwnd, uMsg, wParam, lParam);
+}
+
+static INT getLogicalLineIndexFromCharIndex(LPCTSTR psz, INT ich)
+{
+    INT ich0 = 0, iLine = 0;
+    while (*psz && ich0 < ich)
+    {
+        if (*psz == TEXT('\n'))
+            ++iLine;
+        ++psz;
+        ++ich0;
+    }
+    return iLine;
 }
 
 void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC, RECT& rcClient)
@@ -71,40 +82,88 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC, RECT& rcClient)
     ::DeleteObject(::SelectObject(hdcMem, hPenOld));
 
     // draw text
-    HFONT hFont = GetWindowFont(GetEdit());
+    HFONT hFont = GetWindowFont(hwndEdit);
     HGDIOBJ hFontOld = ::SelectObject(hdcMem, hFont);
-    if (m_bottomline)
+    ::SetBkMode(hdcMem, TRANSPARENT);
     {
-        WCHAR szText[32];
-        ::SetBkMode(hdcMem, TRANSPARENT);
+        INT yLine = m_topmargin;
         INT cyLine = GetLineHeight();
-        for (INT iLine = m_topline; iLine < m_bottomline; ++iLine)
+        WCHAR szText[32];
+        INT cch = Edit_GetTextLength(hwndEdit);
+        BSTR bstrText = ::SysAllocStringLen(NULL, cch);
+        BOOL bFlag = FALSE;
+        if (bstrText)
         {
-            INT yLine = m_topmargin + cyLine * (iLine - m_topline);
-            RECT rc = { 0, yLine, cx - 1, yLine + cyLine };
-            INT nLineNo = iLine + m_linedelta;
-            StringCchPrintfW(szText, _countof(szText), m_format, nLineNo);
+            Edit_GetText(hwndEdit, bstrText, cch + 1);
 
-            if (HANDLE hProp = ::GetProp(hwnd, GetPropName(nLineNo)))
-            {
-                COLORREF rgbBack = (COLORREF(reinterpret_cast<ULONG_PTR>(hProp)) & 0xFFFFFF);
-                HBRUSH hbr = ::CreateSolidBrush(rgbBack);
-                ::FillRect(hdcMem, &rc, hbr);
-                ::DeleteObject(hbr);
-                INT value = (GetRValue(rgbBack) + GetGValue(rgbBack) + GetBValue(rgbBack)) / 3;
-                if (value < 255 / 3)
-                    ::SetTextColor(hdcMem, RGB(255, 255, 255));
-                else
-                    ::SetTextColor(hdcMem, RGB(0, 0, 0));
-            }
+            INT iPhysicalLine = Edit_GetFirstVisibleLine(hwndEdit);
+            INT ich = Edit_LineIndex(hwndEdit, iPhysicalLine);
+            if (ich == -1)
+                ich = cch;
+            INT ichOld = ich;
+            INT cLogicalLines = getLogicalLineIndexFromCharIndex(bstrText, 0x7FFFFFFF);
+            INT iLogicalLine = getLogicalLineIndexFromCharIndex(bstrText, ich);
+
+            INT iOldLogicalLine;
+            if (ich == 0)
+                iOldLogicalLine = -1;
+            else if (ich > 0 && bstrText[ich - 1] == L'\n')
+                iOldLogicalLine = iLogicalLine - 1;
             else
-            {
-                ::SetTextColor(hdcMem, m_rgbText);
-            }
+                iOldLogicalLine = iLogicalLine;
 
-            rc.right -= rightmargin;
-            UINT uFormat = DT_RIGHT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX;
-            ::DrawTextW(hdcMem, szText, ::lstrlenW(szText), &rc, uFormat);
+            do
+            {
+                RECT rc = { 0, yLine, cx - 1, yLine + cyLine };
+                INT nLineNo = iLogicalLine + m_linedelta;
+
+                HANDLE hProp = ::GetProp(hwnd, GetPropName(nLineNo));
+                if (hProp && (ich < cch || iOldLogicalLine < iLogicalLine || iLogicalLine < cLogicalLines))
+                {
+                    COLORREF rgbBack = (COLORREF(reinterpret_cast<ULONG_PTR>(hProp)) & 0xFFFFFF);
+                    HBRUSH hbr = ::CreateSolidBrush(rgbBack);
+                    ::FillRect(hdcMem, &rc, hbr);
+                    ::DeleteObject(hbr);
+                    INT value = (GetRValue(rgbBack) + GetGValue(rgbBack) + GetBValue(rgbBack)) / 3;
+                    if (value < 255 / 3)
+                        ::SetTextColor(hdcMem, RGB(255, 255, 255));
+                    else
+                        ::SetTextColor(hdcMem, RGB(0, 0, 0));
+                }
+                else
+                {
+                    ::SetTextColor(hdcMem, m_rgbText);
+                }
+
+                if (ich <= cch && iOldLogicalLine != iLogicalLine)
+                {
+                    StringCchPrintfW(szText, _countof(szText), m_format, nLineNo);
+                    rc.right -= rightmargin;
+                    UINT uFormat = DT_RIGHT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX;
+                    ::DrawTextW(hdcMem, szText, ::lstrlenW(szText), &rc, uFormat);
+                }
+
+                yLine += cyLine;
+                ++iPhysicalLine;
+                ichOld = ich;
+                while (bstrText[ich])
+                {
+                    if (Edit_LineFromChar(hwndEdit, ich) == iPhysicalLine)
+                        break;
+                    if (bstrText[ich] == L'\n')
+                    {
+                        ++ich;
+                        break;
+                    }
+                    ++ich;
+                }
+                iOldLogicalLine = iLogicalLine;
+                iLogicalLine = getLogicalLineIndexFromCharIndex(bstrText, ich);
+                if (iLogicalLine == iOldLogicalLine && ich == ichOld)
+                    break;
+            } while (yLine < rcClient.bottom);
+
+            ::SysFreeString(bstrText);
         }
     }
     ::SelectObject(hdcMem, hFontOld);
@@ -132,7 +191,7 @@ void LineNumEdit::Prepare()
     RECT rcEdit = rcClient;
     rcEdit.left += cxColumn;
     rcEdit.right -= rightmargin;
-    Edit_SetRect(m_hwnd, &rcEdit);
+    Edit_SetRectNoPaint(m_hwnd, &rcEdit);
 
     if (::IsWindow(m_hwndStatic))
     {
@@ -149,7 +208,7 @@ void LineNumEdit::Prepare()
 
     Edit_GetRect(m_hwnd, &rcEdit);
     m_hwndStatic.SetTopMargin(rcEdit.top);
-    UpdateTopAndBottom();
+    m_hwndStatic.Redraw();
 }
 
 LRESULT CALLBACK
@@ -214,7 +273,7 @@ LineNumEdit::WindowProcDx(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     case EM_REPLACESEL: case EM_SETHANDLE: case EM_SETMARGINS:
         {
             LRESULT ret = DefWndProc(hwnd, uMsg, wParam, lParam);
-            UpdateTopAndBottom();
+            m_hwndStatic.Redraw();
             return ret;
         }
     case WM_SIZE: case WM_SETFONT:
@@ -267,24 +326,6 @@ INT LineNumEdit::GetColumnWidth()
 
     m_cxColumn = leftmargin + (m_num_digits * siz.cx) + rightmargin + leftmargin;
     return m_cxColumn;
-}
-
-void LineNumEdit::UpdateTopAndBottom()
-{
-    RECT rcClient;
-    ::GetClientRect(m_hwnd, &rcClient);
-
-    INT lineheight = m_hwndStatic.GetLineHeight();
-    if (lineheight == 0)
-        return;
-
-    INT cyClient = rcClient.bottom - rcClient.top;
-    INT topline = Edit_GetFirstVisibleLine(m_hwnd);
-    INT maxline = Edit_GetLineCount(m_hwnd);
-    if (topline + (cyClient / lineheight) < maxline)
-        maxline = topline + ((cyClient + lineheight - 1) / lineheight);
-
-    m_hwndStatic.SetTopAndBottom(topline, maxline);
 }
 
 WNDPROC LineNumEdit::SuperclassWindow()

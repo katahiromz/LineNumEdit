@@ -118,16 +118,10 @@ public:
             Redraw();
     }
 
-    void SetTopAndBottom(INT topline, INT bottomline)
-    {
-        m_topline = topline;
-        m_bottomline = bottomline;
-        Redraw();
-    }
-
     void SetTopMargin(INT topmargin)
     {
         m_topmargin = topmargin;
+        Redraw();
     }
 
     void SetLineNumberFormat(LPCTSTR format)
@@ -141,8 +135,6 @@ protected:
     COLORREF m_rgbText;
     COLORREF m_rgbBack;
     INT m_topmargin;
-    INT m_topline;
-    INT m_bottomline;
     INT m_linedelta;
     LPWSTR m_format;
 
