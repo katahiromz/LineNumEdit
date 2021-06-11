@@ -1,11 +1,10 @@
+// LineNumEdit.hpp --- textbox with line numbers
+
 #ifndef _INC_WINDOWS
     #include <windows.h>
 #endif
 #ifndef _INC_WINDOWSX
     #include <windowsx.h>
-#endif
-#ifndef _INC_COMMCTRL
-    #include <commctrl.h>
 #endif
 
 // messages for LineNumEdit
@@ -22,14 +21,14 @@
     #define LINENUMEDIT_DEFAULT_DIGITS 4
 #endif
 
-#ifdef LINENUMEDIT_IMPL
+#ifdef LINENUMEDIT_IMPL // implementation detail
 
-#ifndef _INC_SHLWAPI
-    #include <shlwapi.h>
-#endif
-
+#include <shlwapi.h>
 #include <strsafe.h>
 #include <cassert>
+
+/////////////////////////////////////////////////////////////////////////////////////////
+// LineNumBase --- the base class
 
 class LineNumBase
 {
@@ -56,8 +55,7 @@ public:
     WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     {
         LineNumBase *pBase =
-            reinterpret_cast<LineNumBase *>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
-
+            reinterpret_cast<LineNumBase*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
         if (pBase)
         {
             LRESULT ret = pBase->WindowProcDx(hwnd, uMsg, wParam, lParam);
@@ -65,7 +63,6 @@ public:
                 pBase->m_hwnd = NULL;
             return ret;
         }
-
         return ::DefWindowProc(hwnd, uMsg, wParam, lParam);
     }
 
@@ -105,6 +102,9 @@ protected:
     HWND m_hwnd;
     WNDPROC m_fnOldWndProc;
 };
+
+/////////////////////////////////////////////////////////////////////////////////////////
+// LineNumStatic --- displays the line number for LineNumEdit
 
 class LineNumStatic : public LineNumBase
 {
@@ -179,6 +179,9 @@ protected:
     friend class LineNumEdit;
 };
 
+/////////////////////////////////////////////////////////////////////////////////////////
+// LineNumEdit --- textbox with line numbers
+
 class LineNumEdit : public LineNumBase
 {
 public:
@@ -204,7 +207,7 @@ public:
             m_hwndStatic.SetColors(COLOR_GRAYTEXT, COLOR_3DFACE);
     }
 
-    void SetLineNumberFormat(LPCTSTR format)
+    void SetLineNumberFormat(LPCTSTR format = NULL)
     {
         if (!format)
             format = TEXT("%d");

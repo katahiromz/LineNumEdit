@@ -1,4 +1,22 @@
+// LineNumEdit.cpp --- textbox with line numbers
+
 #include "LineNumEdit.hpp"
+
+static INT getLogicalLineIndexFromCharIndex(LPCTSTR psz, INT ich)
+{
+    INT ich0 = 0, iLine = 0;
+    while (*psz && ich0 < ich)
+    {
+        if (*psz == TEXT('\n'))
+            ++iLine;
+        ++psz;
+        ++ich0;
+    }
+    return iLine;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////
+// LineNumStatic
 
 LineNumStatic::LineNumStatic(HWND hwnd)
     : LineNumBase(hwnd)
@@ -47,19 +65,6 @@ LineNumStatic::WindowProcDx(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         break;
     }
     return DefWndProc(hwnd, uMsg, wParam, lParam);
-}
-
-static INT getLogicalLineIndexFromCharIndex(LPCTSTR psz, INT ich)
-{
-    INT ich0 = 0, iLine = 0;
-    while (*psz && ich0 < ich)
-    {
-        if (*psz == TEXT('\n'))
-            ++iLine;
-        ++psz;
-        ++ich0;
-    }
-    return iLine;
 }
 
 void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC)
@@ -228,6 +233,9 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC)
     }
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////
+// LineNumEdit
+
 void LineNumEdit::Prepare()
 {
     // sanity check
@@ -249,7 +257,7 @@ void LineNumEdit::Prepare()
     rcEdit.right -= rightmargin;
     Edit_SetRectNoPaint(m_hwnd, &rcEdit);
 
-    if (::IsWindow(m_hwndStatic))
+    if (m_hwndStatic)
     {
         ::MoveWindow(m_hwndStatic, 0, 0, cxColumn, cyColumn, TRUE);
     }
@@ -288,7 +296,7 @@ LineNumEdit::WindowProcDx(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             LPCTSTR pszName = m_hwndStatic.GetPropName(INT(wParam));
             ::RemoveProp(m_hwndStatic, pszName);
             COLORREF rgb = COLORREF(lParam);
-            if (rgb != CLR_INVALID && rgb != CLR_NONE)
+            if (rgb != CLR_INVALID)
             {
                 lParam |= 0xFF000000;
                 ::SetProp(m_hwndStatic, pszName, reinterpret_cast<HANDLE>(lParam));
@@ -337,18 +345,20 @@ LineNumEdit::WindowProcDx(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 LRESULT CALLBACK
 LineNumEdit::SuperclassWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+    LineNumEdit* pCtrl = NULL;
     if (uMsg == WM_NCCREATE)
     {
-        LineNumEdit* pCtrl = new LineNumEdit(hwnd);
+        pCtrl = new LineNumEdit(hwnd);
         pCtrl->m_fnOldWndProc = SuperclassWindow();
     }
-
-    LineNumBase *pBase =
-        reinterpret_cast<LineNumBase *>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
+    else if (uMsg == WM_NCDESTROY)
+    {
+        pCtrl = reinterpret_cast<LineNumEdit*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
+    }
 
     LRESULT ret = LineNumBase::WindowProc(hwnd, uMsg, wParam, lParam);
     if (uMsg == WM_NCDESTROY)
-        delete pBase;
+        delete pCtrl;
     return ret;
 }
 
@@ -374,7 +384,7 @@ INT LineNumEdit::GetColumnWidth()
     return m_cxColumn;
 }
 
-WNDPROC LineNumEdit::SuperclassWindow()
+WNDPROC LineNumEdit::SuperclassWindow() // "superclassing"
 {
     static WNDPROC s_fnOldWndProc = NULL;
     if (s_fnOldWndProc)
@@ -385,16 +395,18 @@ WNDPROC LineNumEdit::SuperclassWindow()
         return NULL;
 
     s_fnOldWndProc = wcx.lpfnWndProc;
-    wcx.lpszClassName = LineNumEdit::SuperWndClassName();
-    wcx.lpfnWndProc = LineNumEdit::SuperclassWndProc;
+    wcx.lpszClassName = SuperWndClassName();
+    wcx.lpfnWndProc = SuperclassWndProc;
     if (::RegisterClassEx(&wcx))
         return s_fnOldWndProc;
     return NULL;
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////
+// DllMain --- entry point of the DLL file
+
 #ifdef LINENUMEDIT_DLL
-    BOOL WINAPI
-    DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
+    BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
     {
         if (fdwReason == DLL_PROCESS_ATTACH)
             return (LineNumEdit::SuperclassWindow() != NULL);
