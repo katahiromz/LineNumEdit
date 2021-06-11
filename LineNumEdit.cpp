@@ -192,6 +192,16 @@ LineNumEdit::WindowProcDx(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         return 0;
     case LNEM_GETCOLUMNWIDTH:
         return m_cxColumn;
+    case LNEM_GETLINEMARK:
+        {
+            LPCTSTR pszName = m_hwndStatic.GetPropName(INT(wParam));
+            HANDLE hData = ::GetProp(m_hwndStatic, pszName);
+            if (hData == NULL)
+                return CLR_INVALID;
+            COLORREF rgb = COLORREF(reinterpret_cast<ULONG_PTR>(hData));
+            rgb &= 0xFFFFFF;
+            return rgb;
+        }
     case EM_SETREADONLY:
         {
             LRESULT ret = DefWndProc(hwnd, uMsg, wParam, lParam);
