@@ -91,7 +91,6 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC, RECT& rcClient)
         WCHAR szText[32];
         INT cch = Edit_GetTextLength(hwndEdit);
         BSTR bstrText = ::SysAllocStringLen(NULL, cch);
-        BOOL bFlag = FALSE;
         if (bstrText)
         {
             Edit_GetText(hwndEdit, bstrText, cch + 1);
