@@ -114,17 +114,16 @@ public:
             Redraw();
     }
 
-    void SetTopMargin(INT topmargin)
-    {
-        m_topmargin = topmargin;
-        Redraw();
-    }
-
     void SetLineNumberFormat(LPCTSTR format)
     {
         CoTaskMemFree(m_format);
         SHStrDup(format, &m_format);
         Redraw();
+    }
+
+    HWND GetEdit() const
+    {
+        return ::GetParent(m_hwnd);
     }
 
 protected:
@@ -136,11 +135,6 @@ protected:
     HBITMAP m_hbm;
     INT m_cx;
     INT m_cy;
-
-    HWND GetEdit() const
-    {
-        return ::GetParent(m_hwnd);
-    }
 
     INT GetLineHeight() const
     {

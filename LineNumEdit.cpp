@@ -68,10 +68,9 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC, RECT& rcClient)
     }
     HGDIOBJ hbmOld = ::SelectObject(hdcMem, hbm);
 
-    HWND hwndEdit = ::GetParent(hwnd);
-
     // fill background
     UINT uMsg;
+    HWND hwndEdit = ::GetParent(hwnd);
     if (!::IsWindowEnabled(hwndEdit) || (GetWindowLong(hwndEdit, GWL_STYLE) & ES_READONLY))
         uMsg = WM_CTLCOLORSTATIC;
     else
@@ -241,7 +240,7 @@ void LineNumEdit::Prepare()
     }
 
     Edit_GetRect(m_hwnd, &rcEdit);
-    m_hwndStatic.SetTopMargin(rcEdit.top);
+    m_hwndStatic.m_topmargin = rcEdit.top;
     m_hwndStatic.Redraw();
 }
 
