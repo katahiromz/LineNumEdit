@@ -69,14 +69,14 @@ LineNumStatic::WindowProcDx(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC)
 {
+    // get the client size
     RECT rcClient;
     ::GetClientRect(hwnd, &rcClient);
-
-    // prepare for double buffering
     SIZE siz = { rcClient.right - rcClient.left, rcClient.bottom - rcClient.top };
     if (!siz.cx || !siz.cy)
         return;
 
+    // prepare for double buffering
     HDC hdcMem = ::CreateCompatibleDC(hDC);
     HBITMAP hbm;
     if (m_hbm && siz.cx <= m_siz.cx && siz.cy <= m_siz.cy)
@@ -127,11 +127,11 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC)
     ::LineTo(hdcMem, rcClient.right - 1, rcClient.bottom);
     ::DeleteObject(::SelectObject(hdcMem, hPenOld));
 
-    // draw text
+    // draw lines
+    WCHAR szText[32];
     HFONT hFont = GetWindowFont(hwndEdit);
     HGDIOBJ hFontOld = ::SelectObject(hdcMem, hFont);
     ::SetBkMode(hdcMem, TRANSPARENT);
-    WCHAR szText[32];
     {
         // get the edit text
         INT cch = Edit_GetTextLength(hwndEdit);
@@ -143,7 +143,7 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC)
             // initialize variables for lines loop
             INT iPhysicalLine = Edit_GetFirstVisibleLine(hwndEdit);
             INT ich = Edit_LineIndex(hwndEdit, iPhysicalLine);
-            if (ich == -1)
+            if (ich == -1) // beyond the limit
                 ich = cch;
             INT ichOld = ich;
             INT cLogicalLines = ::getLogicalLineIndexFromCharIndex(bstrText, MAXLONG);
@@ -157,8 +157,7 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC)
             else
                 iOldLogicalLine = iLogicalLine;
 
-            // for each physical lines
-            do
+            do // for each physical lines
             {
                 RECT rc = { 0, yLine, siz.cx - 1, yLine + cyLine }; // one line
                 INT nLabel = iLogicalLine + m_linedelta; // label
@@ -183,7 +182,7 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC)
                     ::SetTextColor(hdcMem, m_rgbText);
                 }
 
-                // draw text
+                // draw line text
                 if (ich <= cch && iOldLogicalLine != iLogicalLine)
                 {
                     StringCchPrintfW(szText, _countof(szText), m_format, nLabel);
@@ -265,7 +264,6 @@ void LineNumEdit::Prepare()
     if (m_hwndStatic)
     {
         ::MoveWindow(m_hwndStatic, 0, 0, cxColumn, cyColumn, TRUE);
-        m_hwndStatic.Redraw();
     }
     else
     {
@@ -393,7 +391,7 @@ WNDPROC LineNumEdit::SuperclassWindow() // "superclassing"
         return s_fnOldWndProc;
 
     WNDCLASSEX wcx = { sizeof(wcx) };
-    if (!::GetClassInfoEx(::GetModuleHandle(NULL), TEXT("EDIT"), &wcx))
+    if (!::GetClassInfoEx(NULL, TEXT("EDIT"), &wcx))
         return NULL;
 
     s_fnOldWndProc = wcx.lpfnWndProc;
