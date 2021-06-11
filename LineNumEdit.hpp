@@ -55,7 +55,12 @@ public:
             reinterpret_cast<LineNumBase *>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
 
         if (pBase)
-            return pBase->WindowProcDx(hwnd, uMsg, wParam, lParam);
+        {
+            LRESULT ret = pBase->WindowProcDx(hwnd, uMsg, wParam, lParam);
+            if (uMsg == WM_NCDESTROY)
+                pBase->m_hwnd = NULL;
+            return ret;
+        }
 
         return ::DefWindowProc(hwnd, uMsg, wParam, lParam);
     }
@@ -216,12 +221,16 @@ protected:
     friend class LineNumEdit;
 };
 
+#ifndef LINENUMEDIT_DEFAULT_DIGITS
+    #define LINENUMEDIT_DEFAULT_DIGITS 4
+#endif
+
 class LineNumEdit : public LineNumBase
 {
 public:
     LineNumEdit(HWND hwnd = NULL)
         : LineNumBase(hwnd)
-        , m_num_digits(4)
+        , m_num_digits(LINENUMEDIT_DEFAULT_DIGITS)
         , m_cxColumn(0)
     {
     }
@@ -257,7 +266,7 @@ public:
 
     static WNDPROC SuperclassWindow();
 
-    void SetNumberOfDigits(INT num = 4)
+    void SetNumberOfDigits(INT num = LINENUMEDIT_DEFAULT_DIGITS)
     {
         m_cxColumn = 0;
         m_num_digits = num;

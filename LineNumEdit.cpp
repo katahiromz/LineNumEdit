@@ -331,13 +331,12 @@ LineNumEdit::SuperclassWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
         pCtrl->m_fnOldWndProc = SuperclassWindow();
     }
 
+    LineNumBase *pBase =
+        reinterpret_cast<LineNumBase *>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
+
     LRESULT ret = LineNumBase::WindowProc(hwnd, uMsg, wParam, lParam);
     if (uMsg == WM_NCDESTROY)
-    {
-        LineNumBase *pBase =
-            reinterpret_cast<LineNumBase *>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
         delete pBase;
-    }
     return ret;
 }
 
