@@ -51,6 +51,9 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC, RECT& rcClient)
 {
     // prepare for double buffering
     INT cx = rcClient.right - rcClient.left, cy = rcClient.bottom - rcClient.top;
+    if (!cx || !cy)
+        return;
+
     HDC hdcMem = ::CreateCompatibleDC(hDC);
     HBITMAP hbm;
     if (m_hbm && cx <= m_cx && cy <= m_cy)
