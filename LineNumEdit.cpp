@@ -85,10 +85,9 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC, RECT& rcClient)
     HFONT hFont = GetWindowFont(hwndEdit);
     HGDIOBJ hFontOld = ::SelectObject(hdcMem, hFont);
     ::SetBkMode(hdcMem, TRANSPARENT);
+    WCHAR szText[32];
     {
-        INT yLine = m_topmargin;
-        INT cyLine = GetLineHeight();
-        WCHAR szText[32];
+        INT yLine = m_topmargin, cyLine = GetLineHeight();
         INT cch = Edit_GetTextLength(hwndEdit);
         BSTR bstrText = ::SysAllocStringLen(NULL, cch);
         if (bstrText)
@@ -100,7 +99,7 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC, RECT& rcClient)
             if (ich == -1)
                 ich = cch;
             INT ichOld = ich;
-            INT cLogicalLines = getLogicalLineIndexFromCharIndex(bstrText, 0x7FFFFFFF);
+            INT cLogicalLines = getLogicalLineIndexFromCharIndex(bstrText, MAXLONG);
             INT iLogicalLine = getLogicalLineIndexFromCharIndex(bstrText, ich);
 
             INT iOldLogicalLine;
@@ -113,10 +112,11 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC, RECT& rcClient)
 
             do
             {
-                RECT rc = { 0, yLine, cx - 1, yLine + cyLine };
-                INT nLineNo = iLogicalLine + m_linedelta;
+                RECT rc = { 0, yLine, cx - 1, yLine + cyLine }; // one line
+                INT nLabel = iLogicalLine + m_linedelta; // label
 
-                HANDLE hProp = ::GetProp(hwnd, GetPropName(nLineNo));
+                // fill the background if necessary, and set text color
+                HANDLE hProp = ::GetProp(hwnd, GetPropName(nLabel));
                 if (hProp && (ich < cch || iOldLogicalLine < iLogicalLine || iLogicalLine < cLogicalLines))
                 {
                     COLORREF rgbBack = (COLORREF(reinterpret_cast<ULONG_PTR>(hProp)) & 0xFFFFFF);
@@ -134,16 +134,20 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC, RECT& rcClient)
                     ::SetTextColor(hdcMem, m_rgbText);
                 }
 
+                // draw text
                 if (ich <= cch && iOldLogicalLine != iLogicalLine)
                 {
-                    StringCchPrintfW(szText, _countof(szText), m_format, nLineNo);
+                    StringCchPrintfW(szText, _countof(szText), m_format, nLabel);
                     rc.right -= rightmargin;
                     UINT uFormat = DT_RIGHT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX;
                     ::DrawTextW(hdcMem, szText, ::lstrlenW(szText), &rc, uFormat);
                 }
 
+                // go to next line
                 yLine += cyLine;
                 ++iPhysicalLine;
+
+                // go to next newline
                 ichOld = ich;
                 while (bstrText[ich])
                 {
@@ -156,12 +160,15 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC, RECT& rcClient)
                     }
                     ++ich;
                 }
+
+                // update logical line if necessary
                 iOldLogicalLine = iLogicalLine;
                 iLogicalLine = getLogicalLineIndexFromCharIndex(bstrText, ich);
                 if (iLogicalLine == iOldLogicalLine && ich == ichOld)
                     break;
             } while (yLine < rcClient.bottom);
 
+            // clean up
             ::SysFreeString(bstrText);
         }
     }
