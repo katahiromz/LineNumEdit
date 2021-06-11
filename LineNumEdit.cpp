@@ -76,7 +76,6 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC, RECT& rcClient)
     if (m_bottomline)
     {
         WCHAR szText[32];
-        ::SetTextColor(hdcMem, m_rgbText);
         ::SetBkMode(hdcMem, TRANSPARENT);
         INT cyLine = GetLineHeight();
         for (INT iLine = m_topline; iLine < m_bottomline; ++iLine)
@@ -88,10 +87,19 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC, RECT& rcClient)
 
             if (HANDLE hProp = ::GetProp(hwnd, GetPropName(nLineNo)))
             {
-                COLORREF rgbBack = COLORREF(reinterpret_cast<ULONG_PTR>(hProp));
+                COLORREF rgbBack = (COLORREF(reinterpret_cast<ULONG_PTR>(hProp)) & 0xFFFFFF);
                 HBRUSH hbr = ::CreateSolidBrush(rgbBack);
                 ::FillRect(hdcMem, &rc, hbr);
                 ::DeleteObject(hbr);
+                INT value = (GetRValue(rgbBack) + GetGValue(rgbBack) + GetBValue(rgbBack)) / 3;
+                if (value < 255 / 3)
+                    ::SetTextColor(hdcMem, RGB(255, 255, 255));
+                else
+                    ::SetTextColor(hdcMem, RGB(0, 0, 0));
+            }
+            else
+            {
+                ::SetTextColor(hdcMem, m_rgbText);
             }
 
             rc.right -= rightmargin;
@@ -171,7 +179,10 @@ LineNumEdit::WindowProcDx(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             ::RemoveProp(m_hwndStatic, pszName);
             COLORREF rgb = COLORREF(lParam);
             if (rgb != CLR_INVALID && rgb != CLR_NONE)
+            {
+                lParam |= 0xFF000000;
                 ::SetProp(m_hwndStatic, pszName, reinterpret_cast<HANDLE>(lParam));
+            }
         }
         m_hwndStatic.Redraw();
         return 0;
