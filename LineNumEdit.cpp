@@ -4,13 +4,13 @@
 
 static INT getLogicalLineIndexFromCharIndex(LPCTSTR psz, INT ich)
 {
-    INT ich0 = 0, iLine = 0;
-    while (*psz && ich0 < ich)
+    INT iLine = 0;
+    while (*psz && ich > 0)
     {
         if (*psz == TEXT('\n'))
             ++iLine;
         ++psz;
-        ++ich0;
+        --ich;
     }
     return iLine;
 }
@@ -165,7 +165,8 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC)
 
                 // fill the background if necessary, and set text color
                 HANDLE hProp = ::GetProp(hwnd, GetPropName(nLabel));
-                if (hProp && (ich < cch || iOldLogicalLine < iLogicalLine || iLogicalLine < cLogicalLines))
+                if (hProp &&
+                    (ich < cch || iOldLogicalLine < iLogicalLine || iLogicalLine < cLogicalLines))
                 {
                     COLORREF rgbBack = (COLORREF(reinterpret_cast<ULONG_PTR>(hProp)) & 0xFFFFFF);
                     HBRUSH hbr = ::CreateSolidBrush(rgbBack);
