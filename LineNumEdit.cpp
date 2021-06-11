@@ -22,7 +22,7 @@ LineNumStatic::LineNumStatic(HWND hwnd)
     : LineNumBase(hwnd)
     , m_rgbText(::GetSysColor(COLOR_WINDOWTEXT))
     , m_rgbBack(::GetSysColor(COLOR_3DFACE))
-    , m_topmargin(0), m_linedelta(1)
+    , m_linedelta(1)
     , m_hbm(NULL)
     , m_siz { 0, 0 }
 {
@@ -102,6 +102,11 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC)
                       reinterpret_cast<WPARAM>(hDC), reinterpret_cast<LPARAM>(hwndEdit)));
     ::FillRect(hdcMem, &rcClient, hbr);
 
+    // get top margin and line height
+    RECT rcEdit;
+    Edit_GetRect(hwndEdit, &rcEdit);
+    INT yLine = rcEdit.top, cyLine = GetLineHeight();
+
     // get margins
     DWORD dwMargins = DWORD(::SendMessage(hwndEdit, EM_GETMARGINS, 0, 0));
     INT leftmargin = LOWORD(dwMargins), rightmargin = HIWORD(dwMargins);
@@ -127,7 +132,6 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC)
     HGDIOBJ hFontOld = ::SelectObject(hdcMem, hFont);
     ::SetBkMode(hdcMem, TRANSPARENT);
     WCHAR szText[32];
-    INT yLine = m_topmargin, cyLine = GetLineHeight();
     {
         // get the edit text
         INT cch = Edit_GetTextLength(hwndEdit);
@@ -260,6 +264,7 @@ void LineNumEdit::Prepare()
     if (m_hwndStatic)
     {
         ::MoveWindow(m_hwndStatic, 0, 0, cxColumn, cyColumn, TRUE);
+        m_hwndStatic.Redraw();
     }
     else
     {
@@ -269,10 +274,6 @@ void LineNumEdit::Prepare()
                                          NULL, ::GetModuleHandle(NULL), NULL);
         m_hwndStatic.Attach(hwndStatic);
     }
-
-    Edit_GetRect(m_hwnd, &rcEdit);
-    m_hwndStatic.m_topmargin = rcEdit.top;
-    m_hwndStatic.Redraw();
 }
 
 LRESULT CALLBACK

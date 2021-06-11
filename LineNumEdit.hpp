@@ -137,7 +137,7 @@ public:
 
 protected:
     COLORREF m_rgbText, m_rgbBack;
-    INT m_topmargin, m_linedelta;
+    INT m_linedelta;
     LPWSTR m_format;
     HBITMAP m_hbm;
     SIZE m_siz;
