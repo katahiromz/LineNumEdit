@@ -297,58 +297,6 @@ protected:
         FORWARD_WM_SYSCOLORCHANGE(hwnd, DefWndProc);
         RefreshColors();
     }
-
-    void OnVScroll(HWND hwnd, HWND hwndCtl, UINT code, int pos)
-    {
-        FORWARD_WM_VSCROLL(hwnd, hwndCtl, code, pos, DefWndProc);
-        UpdateTopAndBottom();
-    }
-
-    void OnSize(HWND hwnd, UINT state, int cx, int cy)
-    {
-        FORWARD_WM_SIZE(hwnd, state, cx, cy, DefWndProc);
-        Prepare();
-    }
-
-    void OnSetFont(HWND hwnd, HFONT hfont, BOOL fRedraw)
-    {
-        FORWARD_WM_SETFONT(hwnd, hfont, fRedraw, DefWndProc);
-        Prepare();
-    }
-
-    void OnSetText(HWND hwnd, LPCTSTR lpszText)
-    {
-        FORWARD_WM_SETTEXT(hwnd, lpszText, DefWndProc);
-        UpdateTopAndBottom();
-    }
-
-    void OnChar(HWND hwnd, TCHAR ch, int cRepeat)
-    {
-        FORWARD_WM_CHAR(hwnd, ch, cRepeat, DefWndProc);
-        UpdateTopAndBottom();
-        m_hwndStatic.Redraw();
-    }
-
-    void OnKey(HWND hwnd, UINT vk, BOOL fDown, int cRepeat, UINT flags)
-    {
-        if (fDown)
-            FORWARD_WM_KEYDOWN(hwnd, vk, cRepeat, flags, DefWndProc);
-        else
-            FORWARD_WM_KEYUP(hwnd, vk, cRepeat, flags, DefWndProc);
-        UpdateTopAndBottom();
-        m_hwndStatic.Redraw();
-    }
-
-#undef FORWARD_WM_MOUSEWHEEL
-#define FORWARD_WM_MOUSEWHEEL(hwnd, xPos, yPos, zDelta, fwKeys, fn) \
-    (void)(fn)((hwnd), WM_MOUSEWHEEL, MAKEWPARAM((fwKeys),(zDelta)), MAKELPARAM((xPos),(yPos)))
-
-    void OnMouseWheel(HWND hwnd, int xPos, int yPos, int zDelta, UINT fwKeys)
-    {
-        FORWARD_WM_MOUSEWHEEL(hwnd, xPos, yPos, zDelta, fwKeys, DefWndProc);
-        UpdateTopAndBottom();
-        m_hwndStatic.Redraw();
-    }
 };
 
 #endif  // def LINENUMEDIT_IMPL

@@ -159,14 +159,6 @@ LineNumEdit::WindowProcDx(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     {
         HANDLE_MSG(hwnd, WM_ENABLE, OnEnable);
         HANDLE_MSG(hwnd, WM_SYSCOLORCHANGE, OnSysColorChange);
-        HANDLE_MSG(hwnd, WM_VSCROLL, OnVScroll);
-        HANDLE_MSG(hwnd, WM_SIZE, OnSize);
-        HANDLE_MSG(hwnd, WM_SETFONT, OnSetFont);
-        HANDLE_MSG(hwnd, WM_SETTEXT, OnSetText);
-        HANDLE_MSG(hwnd, WM_CHAR, OnChar);
-        HANDLE_MSG(hwnd, WM_KEYDOWN, OnKey);
-        HANDLE_MSG(hwnd, WM_KEYUP, OnKey);
-        HANDLE_MSG(hwnd, WM_MOUSEWHEEL, OnMouseWheel);
     case LNEM_SETLINENUMFORMAT:
         SetLineNumberFormat(reinterpret_cast<LPCTSTR>(lParam));
         return 0;
@@ -206,12 +198,19 @@ LineNumEdit::WindowProcDx(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             RefreshColors();
             return ret;
         }
-    case EM_SCROLL: case EM_SCROLLCARET: case EM_LINESCROLL:
+    case WM_SETTEXT: case WM_CHAR: case WM_KEYDOWN: case WM_KEYUP: case WM_VSCROLL:
+    case WM_CUT: case WM_PASTE: case WM_UNDO: case WM_MOUSEWHEEL:
+    case EM_UNDO: case EM_SCROLL: case EM_SCROLLCARET: case EM_LINESCROLL:
     case EM_REPLACESEL: case EM_SETHANDLE: case EM_SETMARGINS:
-    case WM_CUT: case WM_PASTE: case WM_UNDO: case EM_UNDO:
         {
             LRESULT ret = DefWndProc(hwnd, uMsg, wParam, lParam);
             UpdateTopAndBottom();
+            return ret;
+        }
+    case WM_SIZE: case WM_SETFONT:
+        {
+            LRESULT ret = DefWndProc(hwnd, uMsg, wParam, lParam);
+            Prepare();
             return ret;
         }
     default:
