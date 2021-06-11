@@ -6,8 +6,17 @@ LineNumStatic::LineNumStatic(HWND hwnd)
     , m_rgbBack(::GetSysColor(COLOR_3DFACE))
     , m_topmargin(0)
     , m_linedelta(1)
+    , m_hbm(NULL)
+    , m_cx(0)
+    , m_cy(0)
 {
     SHStrDup(TEXT("%d"), &m_format);
+}
+
+LineNumStatic::~LineNumStatic()
+{
+    ::DeleteObject(m_hbm);
+    ::CoTaskMemFree(m_format);
 }
 
 LRESULT CALLBACK
@@ -40,12 +49,20 @@ static INT getLogicalLineIndexFromCharIndex(LPCTSTR psz, INT ich)
 
 void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC, RECT& rcClient)
 {
-    INT cx = rcClient.right - rcClient.left;
-    INT cy = rcClient.bottom - rcClient.top;
-
     // prepare for double buffering
+    INT cx = rcClient.right - rcClient.left, cy = rcClient.bottom - rcClient.top;
     HDC hdcMem = ::CreateCompatibleDC(hDC);
-    HBITMAP hbm = ::CreateCompatibleBitmap(hDC, cx, cy);
+    HBITMAP hbm;
+    if (m_hbm && cx <= m_cx && cy <= m_cy)
+    {
+        hbm = m_hbm;
+    }
+    else
+    {
+        hbm = ::CreateCompatibleBitmap(hDC, cx, cy);
+        m_cx = cx;
+        m_cy = cy;
+    }
     HGDIOBJ hbmOld = ::SelectObject(hdcMem, hbm);
 
     HWND hwndEdit = ::GetParent(hwnd);
@@ -178,6 +195,12 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC, RECT& rcClient)
     // send the image to the window
     ::BitBlt(hDC, 0, 0, rcClient.right, rcClient.bottom, hdcMem, 0, 0, SRCCOPY);
     ::SelectObject(hdcMem, hbmOld);
+
+    if (m_hbm != hbm)
+    {
+        DeleteObject(m_hbm);
+        m_hbm = hbm;
+    }
 }
 
 void LineNumEdit::Prepare()

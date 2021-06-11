@@ -101,11 +101,7 @@ class LineNumStatic : public LineNumBase
 {
 public:
     LineNumStatic(HWND hwnd = NULL);
-
-    ~LineNumStatic()
-    {
-        CoTaskMemFree(m_format);
-    }
+    ~LineNumStatic();
 
     LRESULT CALLBACK
     WindowProcDx(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) override;
@@ -137,6 +133,9 @@ protected:
     INT m_topmargin;
     INT m_linedelta;
     LPWSTR m_format;
+    HBITMAP m_hbm;
+    INT m_cx;
+    INT m_cy;
 
     HWND GetEdit() const
     {
