@@ -23,14 +23,14 @@ add_library(LineNumEdit_static STATIC LineNumEdit.cpp)
 target_compile_definitions(LineNumEdit_static PRIVATE UNICODE _UNICODE LINENUMEDIT_IMPL)
 target_link_libraries(LineNumEdit_static shlwapi)
 
-# main.exe
-add_executable(main WIN32 main.cpp main_res.rc)
+# LineNumEdit_test.exe
+add_executable(LineNumEdit_test WIN32 LineNumEdit_test.cpp LineNumEdit_test_res.rc)
 if(TRUE)
-    target_link_libraries(main comctl32 shlwapi LineNumEdit_static)
-    target_compile_definitions(main PRIVATE UNICODE _UNICODE LINENUMEDIT_IMPL)
+    target_link_libraries(LineNumEdit_test comctl32 shlwapi LineNumEdit_static)
+    target_compile_definitions(LineNumEdit_test PRIVATE UNICODE _UNICODE LINENUMEDIT_IMPL)
 else()
-    target_link_libraries(main comctl32 shlwapi)
-    target_compile_definitions(main PRIVATE UNICODE _UNICODE LINENUMEDIT_DLL)
+    target_link_libraries(LineNumEdit_test comctl32 shlwapi)
+    target_compile_definitions(LineNumEdit_test PRIVATE UNICODE _UNICODE LINENUMEDIT_DLL)
 endif()
 
 ##############################################################################
