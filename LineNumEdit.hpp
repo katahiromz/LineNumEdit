@@ -121,8 +121,8 @@ public:
 
     void SetLineNumberFormat(LPCTSTR format)
     {
-        CoTaskMemFree(m_format);
-        SHStrDup(format, &m_format);
+        ::CoTaskMemFree(m_format);
+        ::SHStrDup(format, &m_format);
         Redraw();
     }
 
@@ -132,22 +132,19 @@ public:
     }
 
 protected:
-    COLORREF m_rgbText;
-    COLORREF m_rgbBack;
-    INT m_topmargin;
-    INT m_linedelta;
+    COLORREF m_rgbText, m_rgbBack;
+    INT m_topmargin, m_linedelta;
     LPWSTR m_format;
     HBITMAP m_hbm;
-    INT m_cx;
-    INT m_cy;
+    INT m_cx, m_cy;
 
     INT GetLineHeight() const
     {
         HDC hDC = ::GetDC(m_hwnd);
-        HGDIOBJ hFontOld = SelectObject(hDC, GetWindowFont(GetEdit()));
+        HGDIOBJ hFontOld = ::SelectObject(hDC, GetWindowFont(GetEdit()));
         TEXTMETRIC tm;
         ::GetTextMetrics(hDC, &tm);
-        SelectObject(hDC, hFontOld);
+        ::SelectObject(hDC, hFontOld);
         ::ReleaseDC(m_hwnd, hDC);
         return tm.tmHeight;
     }
@@ -162,7 +159,7 @@ protected:
     static BOOL CALLBACK
     PropEnumProc(HWND hwnd, LPCTSTR lpszString, HANDLE hData)
     {
-        if (StrCmpNI(lpszString, TEXT("LineNum-"), 8) == 0)
+        if (::StrCmpNI(lpszString, TEXT("LineNum-"), 8) == 0)
             ::RemoveProp(hwnd, lpszString);
         return TRUE;
     }
@@ -170,6 +167,7 @@ protected:
     void DeleteProps(HWND hwnd)
     {
         ::EnumProps(hwnd, PropEnumProc);
+        Redraw();
     }
 
     void OnDestroy(HWND hwnd)
@@ -191,7 +189,6 @@ protected:
         {
             RECT rcClient;
             ::GetClientRect(hwnd, &rcClient);
-
             OnDrawClient(hwnd, hDC, rcClient);
 
             ::EndPaint(hwnd, &ps);
@@ -201,20 +198,20 @@ protected:
     void OnLButtonDown(HWND hwnd, BOOL fDoubleClick, int x, int y, UINT keyFlags)
     {
         RECT rc;
-        GetClientRect(hwnd, &rc);
+        ::GetClientRect(hwnd, &rc);
         POINT pt = { rc.right + 1, y };
         HWND hwndEdit = GetEdit();
-        MapWindowPoints(hwnd, hwndEdit, &pt, 1);
+        ::MapWindowPoints(hwnd, hwndEdit, &pt, 1);
         FORWARD_WM_LBUTTONDOWN(hwndEdit, fDoubleClick, pt.x, pt.y, keyFlags, SendMessage);
     }
 
     void OnMouseMove(HWND hwnd, int x, int y, UINT keyFlags)
     {
         RECT rc;
-        GetClientRect(hwnd, &rc);
+        ::GetClientRect(hwnd, &rc);
         POINT pt = { rc.right + 1, y };
         HWND hwndEdit = GetEdit();
-        MapWindowPoints(hwnd, hwndEdit, &pt, 1);
+        ::MapWindowPoints(hwnd, hwndEdit, &pt, 1);
         FORWARD_WM_MOUSEMOVE(hwndEdit, pt.x, pt.y, keyFlags, SendMessage);
     }
 
@@ -268,7 +265,7 @@ public:
 
     void SetNumberOfDigits(INT num = LINENUMEDIT_DEFAULT_DIGITS)
     {
-        m_cxColumn = 0;
+        m_cxColumn = 0; // clear cache
         m_num_digits = num;
         Prepare();
     }

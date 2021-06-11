@@ -10,7 +10,7 @@ LineNumStatic::LineNumStatic(HWND hwnd)
     , m_cx(0)
     , m_cy(0)
 {
-    SHStrDup(TEXT("%d"), &m_format);
+    ::SHStrDup(TEXT("%d"), &m_format);
 }
 
 LineNumStatic::~LineNumStatic()
@@ -70,7 +70,7 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC, RECT& rcClient)
 
     // fill background
     UINT uMsg;
-    HWND hwndEdit = ::GetParent(hwnd);
+    HWND hwndEdit = GetEdit();
     if (!::IsWindowEnabled(hwndEdit) || (GetWindowLong(hwndEdit, GWL_STYLE) & ES_READONLY))
         uMsg = WM_CTLCOLORSTATIC;
     else
@@ -82,7 +82,7 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC, RECT& rcClient)
     ::FillRect(hdcMem, &rcClient, hbr);
 
     // get margins
-    DWORD dwMargins = DWORD(SendMessage(hwndEdit, EM_GETMARGINS, 0, 0));
+    DWORD dwMargins = DWORD(::SendMessage(hwndEdit, EM_GETMARGINS, 0, 0));
     INT leftmargin = LOWORD(dwMargins), rightmargin = HIWORD(dwMargins);
 
     // shrink rectangle
@@ -119,8 +119,8 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC, RECT& rcClient)
             if (ich == -1)
                 ich = cch;
             INT ichOld = ich;
-            INT cLogicalLines = getLogicalLineIndexFromCharIndex(bstrText, MAXLONG);
-            INT iLogicalLine = getLogicalLineIndexFromCharIndex(bstrText, ich);
+            INT cLogicalLines = ::getLogicalLineIndexFromCharIndex(bstrText, MAXLONG);
+            INT iLogicalLine = ::getLogicalLineIndexFromCharIndex(bstrText, ich);
 
             INT iOldLogicalLine;
             if (ich == 0)
@@ -183,7 +183,7 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC, RECT& rcClient)
 
                 // update logical line if necessary
                 iOldLogicalLine = iLogicalLine;
-                iLogicalLine = getLogicalLineIndexFromCharIndex(bstrText, ich);
+                iLogicalLine = ::getLogicalLineIndexFromCharIndex(bstrText, ich);
                 if (iLogicalLine == iOldLogicalLine && ich == ichOld)
                     break;
             } while (yLine < rcClient.bottom);
@@ -217,7 +217,7 @@ void LineNumEdit::Prepare()
     INT cyColumn = rcClient.bottom - rcClient.top;
 
     // get margins
-    DWORD dwMargins = DWORD(SendMessage(m_hwnd, EM_GETMARGINS, 0, 0));
+    DWORD dwMargins = DWORD(::SendMessage(m_hwnd, EM_GETMARGINS, 0, 0));
     INT leftmargin = LOWORD(dwMargins), rightmargin = HIWORD(dwMargins);
 
     // adjust rectangle
@@ -234,8 +234,8 @@ void LineNumEdit::Prepare()
     {
         DWORD style = WS_CHILD | WS_VISIBLE | SS_NOTIFY;
         HWND hwndStatic = ::CreateWindow(TEXT("STATIC"), NULL, style,
-            0, 0, cxColumn, cyColumn, m_hwnd, NULL,
-            GetModuleHandle(NULL), NULL);
+                                         0, 0, cxColumn, cyColumn, m_hwnd,
+                                         NULL, ::GetModuleHandle(NULL), NULL);
         m_hwndStatic.Attach(hwndStatic);
     }
 
@@ -272,7 +272,6 @@ LineNumEdit::WindowProcDx(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         return 0;
     case LNEM_CLEARLINEMARKS:
         m_hwndStatic.DeleteProps(m_hwndStatic);
-        m_hwndStatic.Redraw();
         return 0;
     case LNEM_SETLINEDELTA:
         m_hwndStatic.m_linedelta = INT(wParam);
@@ -343,7 +342,7 @@ LineNumEdit::SuperclassWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 INT LineNumEdit::GetColumnWidth()
 {
     if (m_cxColumn)
-        return m_cxColumn;
+        return m_cxColumn; // cached
 
     SIZE siz;
     HDC hDC = ::GetDC(m_hwnd);
@@ -353,7 +352,7 @@ INT LineNumEdit::GetColumnWidth()
     ::ReleaseDC(m_hwnd, hDC);
 
     // get margins
-    DWORD dwMargins = DWORD(SendMessage(m_hwnd, EM_GETMARGINS, 0, 0));
+    DWORD dwMargins = DWORD(::SendMessage(m_hwnd, EM_GETMARGINS, 0, 0));
     INT leftmargin = LOWORD(dwMargins), rightmargin = HIWORD(dwMargins);
 
     m_cxColumn = leftmargin + (m_num_digits * siz.cx) + rightmargin + leftmargin;
