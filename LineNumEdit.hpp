@@ -170,50 +170,7 @@ protected:
         Redraw();
     }
 
-    void OnDestroy(HWND hwnd)
-    {
-        DeleteProps(hwnd);
-    }
-
-    BOOL OnEraseBkgnd(HWND hwnd, HDC hdc)
-    {
-        return TRUE;
-    }
-
-    void OnDrawClient(HWND hwnd, HDC hDC, RECT& rcClient);
-
-    void OnPaint(HWND hwnd)
-    {
-        PAINTSTRUCT ps;
-        if (HDC hDC = ::BeginPaint(hwnd, &ps))
-        {
-            RECT rcClient;
-            ::GetClientRect(hwnd, &rcClient);
-            OnDrawClient(hwnd, hDC, rcClient);
-
-            ::EndPaint(hwnd, &ps);
-        }
-    }
-
-    void OnLButtonDown(HWND hwnd, BOOL fDoubleClick, int x, int y, UINT keyFlags)
-    {
-        RECT rc;
-        ::GetClientRect(hwnd, &rc);
-        POINT pt = { rc.right + 1, y };
-        HWND hwndEdit = GetEdit();
-        ::MapWindowPoints(hwnd, hwndEdit, &pt, 1);
-        FORWARD_WM_LBUTTONDOWN(hwndEdit, fDoubleClick, pt.x, pt.y, keyFlags, SendMessage);
-    }
-
-    void OnMouseMove(HWND hwnd, int x, int y, UINT keyFlags)
-    {
-        RECT rc;
-        ::GetClientRect(hwnd, &rc);
-        POINT pt = { rc.right + 1, y };
-        HWND hwndEdit = GetEdit();
-        ::MapWindowPoints(hwnd, hwndEdit, &pt, 1);
-        FORWARD_WM_MOUSEMOVE(hwndEdit, pt.x, pt.y, keyFlags, SendMessage);
-    }
+    void OnDrawClient(HWND hwnd, HDC hDC);
 
     friend class LineNumEdit;
 };
@@ -277,18 +234,6 @@ protected:
 
     INT GetColumnWidth();
     void UpdateTopAndBottom();
-
-    void OnEnable(HWND hwnd, BOOL fEnable)
-    {
-        FORWARD_WM_ENABLE(hwnd, fEnable, DefWndProc);
-        RefreshColors();
-    }
-
-    void OnSysColorChange(HWND hwnd)
-    {
-        FORWARD_WM_SYSCOLORCHANGE(hwnd, DefWndProc);
-        RefreshColors();
-    }
 };
 
 #endif  // def LINENUMEDIT_IMPL

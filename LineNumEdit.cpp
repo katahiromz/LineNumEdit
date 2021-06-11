@@ -22,14 +22,32 @@ LineNumStatic::~LineNumStatic()
 LRESULT CALLBACK
 LineNumStatic::WindowProcDx(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+    RECT rc;
+    POINT pt;
+    PAINTSTRUCT ps;
+
     switch (uMsg)
     {
-        HANDLE_MSG(hwnd, WM_ERASEBKGND, OnEraseBkgnd);
-        HANDLE_MSG(hwnd, WM_PAINT, OnPaint);
-        HANDLE_MSG(hwnd, WM_LBUTTONDOWN, OnLButtonDown);
-        HANDLE_MSG(hwnd, WM_LBUTTONDBLCLK, OnLButtonDown);
-        HANDLE_MSG(hwnd, WM_MOUSEMOVE, OnMouseMove);
-        HANDLE_MSG(hwnd, WM_DESTROY, OnDestroy);
+    case WM_PAINT:
+        if (HDC hDC = ::BeginPaint(hwnd, &ps))
+        {
+            OnDrawClient(hwnd, hDC);
+            ::EndPaint(hwnd, &ps);
+        }
+        return 0;
+    case WM_LBUTTONDOWN:
+    case WM_LBUTTONDBLCLK:
+    case WM_MOUSEMOVE:
+        ::GetClientRect(hwnd, &rc);
+        pt.x = rc.right + 1;
+        pt.y = GET_Y_LPARAM(lParam);
+        ::MapWindowPoints(hwnd, GetEdit(), &pt, 1);
+        break;
+    case WM_ERASEBKGND:
+        return TRUE;
+    case WM_DESTROY:
+        DeleteProps(hwnd);
+        return 0;
     }
     return DefWndProc(hwnd, uMsg, wParam, lParam);
 }
@@ -47,8 +65,11 @@ static INT getLogicalLineIndexFromCharIndex(LPCTSTR psz, INT ich)
     return iLine;
 }
 
-void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC, RECT& rcClient)
+void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC)
 {
+    RECT rcClient;
+    ::GetClientRect(hwnd, &rcClient);
+
     // prepare for double buffering
     INT cx = rcClient.right - rcClient.left, cy = rcClient.bottom - rcClient.top;
     if (!cx || !cy)
@@ -106,8 +127,9 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC, RECT& rcClient)
     HGDIOBJ hFontOld = ::SelectObject(hdcMem, hFont);
     ::SetBkMode(hdcMem, TRANSPARENT);
     WCHAR szText[32];
+    INT yLine = m_topmargin, cyLine = GetLineHeight();
     {
-        INT yLine = m_topmargin, cyLine = GetLineHeight();
+        // get the edit text
         INT cch = Edit_GetTextLength(hwndEdit);
         BSTR bstrText = ::SysAllocStringLen(NULL, cch);
         if (bstrText)
@@ -249,8 +271,12 @@ LineNumEdit::WindowProcDx(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     switch (uMsg)
     {
-        HANDLE_MSG(hwnd, WM_ENABLE, OnEnable);
-        HANDLE_MSG(hwnd, WM_SYSCOLORCHANGE, OnSysColorChange);
+    case WM_ENABLE: case WM_SYSCOLORCHANGE:
+        {
+            LRESULT ret = DefWndProc(hwnd, uMsg, wParam, lParam);
+            RefreshColors();
+            return ret;
+        }
     case LNEM_SETLINENUMFORMAT:
         SetLineNumberFormat(reinterpret_cast<LPCTSTR>(lParam));
         return 0;
