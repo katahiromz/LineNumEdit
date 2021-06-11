@@ -43,6 +43,7 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC, RECT& rcClient)
     INT cx = rcClient.right - rcClient.left;
     INT cy = rcClient.bottom - rcClient.top;
 
+    // prepare for double buffering
     HDC hdcMem = ::CreateCompatibleDC(hDC);
     HBITMAP hbm = ::CreateCompatibleBitmap(hDC, cx, cy);
     HGDIOBJ hbmOld = ::SelectObject(hdcMem, hbm);
@@ -174,6 +175,7 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC, RECT& rcClient)
     }
     ::SelectObject(hdcMem, hFontOld);
 
+    // send the image to the window
     ::BitBlt(hDC, 0, 0, rcClient.right, rcClient.bottom, hdcMem, 0, 0, SRCCOPY);
     ::SelectObject(hdcMem, hbmOld);
 }
