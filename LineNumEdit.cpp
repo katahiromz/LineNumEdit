@@ -4,11 +4,9 @@ LineNumStatic::LineNumStatic(HWND hwnd)
     : LineNumBase(hwnd)
     , m_rgbText(::GetSysColor(COLOR_WINDOWTEXT))
     , m_rgbBack(::GetSysColor(COLOR_3DFACE))
-    , m_topmargin(0)
-    , m_linedelta(1)
+    , m_topmargin(0), m_linedelta(1)
     , m_hbm(NULL)
-    , m_cx(0)
-    , m_cy(0)
+    , m_siz { 0, 0 }
 {
     ::SHStrDup(TEXT("%d"), &m_format);
 }
@@ -25,7 +23,6 @@ LineNumStatic::WindowProcDx(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     RECT rc;
     POINT pt;
     PAINTSTRUCT ps;
-
     switch (uMsg)
     {
     case WM_PAINT:
@@ -47,7 +44,7 @@ LineNumStatic::WindowProcDx(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         return TRUE;
     case WM_DESTROY:
         DeleteProps(hwnd);
-        return 0;
+        break;
     }
     return DefWndProc(hwnd, uMsg, wParam, lParam);
 }
@@ -71,21 +68,20 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC)
     ::GetClientRect(hwnd, &rcClient);
 
     // prepare for double buffering
-    INT cx = rcClient.right - rcClient.left, cy = rcClient.bottom - rcClient.top;
-    if (!cx || !cy)
+    SIZE siz = { rcClient.right - rcClient.left, rcClient.bottom - rcClient.top };
+    if (!siz.cx || !siz.cy)
         return;
 
     HDC hdcMem = ::CreateCompatibleDC(hDC);
     HBITMAP hbm;
-    if (m_hbm && cx <= m_cx && cy <= m_cy)
+    if (m_hbm && siz.cx <= m_siz.cx && siz.cy <= m_siz.cy)
     {
         hbm = m_hbm;
     }
     else
     {
-        hbm = ::CreateCompatibleBitmap(hDC, cx, cy);
-        m_cx = cx;
-        m_cy = cy;
+        hbm = ::CreateCompatibleBitmap(hDC, siz.cx, siz.cy);
+        m_siz = siz;
     }
     HGDIOBJ hbmOld = ::SelectObject(hdcMem, hbm);
 
@@ -96,7 +92,6 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC)
         uMsg = WM_CTLCOLORSTATIC;
     else
         uMsg = WM_CTLCOLOREDIT;
-
     HBRUSH hbr = reinterpret_cast<HBRUSH>(
         ::SendMessage(GetParent(hwndEdit), uMsg,
                       reinterpret_cast<WPARAM>(hDC), reinterpret_cast<LPARAM>(hwndEdit)));
@@ -108,7 +103,7 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC)
 
     // shrink rectangle
     rcClient.right -= leftmargin;
-    cx -= leftmargin;
+    siz.cx -= leftmargin;
 
     // fill background
     hbr = ::CreateSolidBrush(m_rgbBack);
@@ -136,6 +131,7 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC)
         {
             Edit_GetText(hwndEdit, bstrText, cch + 1);
 
+            // initialize variables for lines loop
             INT iPhysicalLine = Edit_GetFirstVisibleLine(hwndEdit);
             INT ich = Edit_LineIndex(hwndEdit, iPhysicalLine);
             if (ich == -1)
@@ -152,9 +148,10 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC)
             else
                 iOldLogicalLine = iLogicalLine;
 
+            // for each physical lines
             do
             {
-                RECT rc = { 0, yLine, cx - 1, yLine + cyLine }; // one line
+                RECT rc = { 0, yLine, siz.cx - 1, yLine + cyLine }; // one line
                 INT nLabel = iLogicalLine + m_linedelta; // label
 
                 // fill the background if necessary, and set text color
@@ -208,7 +205,7 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC)
                 iLogicalLine = ::getLogicalLineIndexFromCharIndex(bstrText, ich);
                 if (iLogicalLine == iOldLogicalLine && ich == ichOld)
                     break;
-            } while (yLine < rcClient.bottom);
+            } while (yLine < rcClient.bottom); // beyond the client area?
 
             // clean up
             ::SysFreeString(bstrText);
@@ -220,6 +217,10 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC)
     ::BitBlt(hDC, 0, 0, rcClient.right, rcClient.bottom, hdcMem, 0, 0, SRCCOPY);
     ::SelectObject(hdcMem, hbmOld);
 
+    // clean up
+    ::DeleteDC(hdcMem);
+
+    // do cache
     if (m_hbm != hbm)
     {
         DeleteObject(m_hbm);
@@ -229,14 +230,14 @@ void LineNumStatic::OnDrawClient(HWND hwnd, HDC hDC)
 
 void LineNumEdit::Prepare()
 {
+    // sanity check
     assert(::IsWindow(m_hwnd));
     assert(!!(::GetWindowLong(m_hwnd, GWL_STYLE) & WS_CHILD));
     assert(!!(::GetWindowLong(m_hwnd, GWL_STYLE) & ES_MULTILINE));
 
     RECT rcClient;
     ::GetClientRect(m_hwnd, &rcClient);
-    INT cxColumn = GetColumnWidth();
-    INT cyColumn = rcClient.bottom - rcClient.top;
+    INT cxColumn = GetColumnWidth(), cyColumn = rcClient.bottom - rcClient.top;
 
     // get margins
     DWORD dwMargins = DWORD(::SendMessage(m_hwnd, EM_GETMARGINS, 0, 0));
@@ -269,14 +270,13 @@ void LineNumEdit::Prepare()
 LRESULT CALLBACK
 LineNumEdit::WindowProcDx(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+    LRESULT ret;
     switch (uMsg)
     {
-    case WM_ENABLE: case WM_SYSCOLORCHANGE:
-        {
-            LRESULT ret = DefWndProc(hwnd, uMsg, wParam, lParam);
-            RefreshColors();
-            return ret;
-        }
+    case WM_ENABLE: case WM_SYSCOLORCHANGE: case EM_SETREADONLY:
+        ret = DefWndProc(hwnd, uMsg, wParam, lParam);
+        RefreshColors();
+        return ret;
     case LNEM_SETLINENUMFORMAT:
         SetLineNumberFormat(reinterpret_cast<LPCTSTR>(lParam));
         return 0;
@@ -316,32 +316,20 @@ LineNumEdit::WindowProcDx(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
             if (hData == NULL)
                 return CLR_INVALID;
             COLORREF rgb = COLORREF(reinterpret_cast<ULONG_PTR>(hData));
-            rgb &= 0xFFFFFF;
+            rgb &= 0x00FFFFFF;
             return rgb;
-        }
-    case EM_SETREADONLY:
-        {
-            LRESULT ret = DefWndProc(hwnd, uMsg, wParam, lParam);
-            RefreshColors();
-            return ret;
         }
     case WM_SETTEXT: case WM_CHAR: case WM_KEYDOWN: case WM_KEYUP: case WM_VSCROLL:
     case WM_CUT: case WM_PASTE: case WM_UNDO: case WM_MOUSEWHEEL:
     case EM_UNDO: case EM_SCROLL: case EM_SCROLLCARET: case EM_LINESCROLL:
     case EM_REPLACESEL: case EM_SETHANDLE: case EM_SETMARGINS:
-        {
-            LRESULT ret = DefWndProc(hwnd, uMsg, wParam, lParam);
-            m_hwndStatic.Redraw();
-            return ret;
-        }
+        ret = DefWndProc(hwnd, uMsg, wParam, lParam);
+        m_hwndStatic.Redraw();
+        return ret;
     case WM_SIZE: case WM_SETFONT:
-        {
-            LRESULT ret = DefWndProc(hwnd, uMsg, wParam, lParam);
-            Prepare();
-            return ret;
-        }
-    default:
-        break;
+        ret = DefWndProc(hwnd, uMsg, wParam, lParam);
+        Prepare();
+        return ret;
     }
     return DefWndProc(hwnd, uMsg, wParam, lParam);
 }
@@ -351,8 +339,7 @@ LineNumEdit::SuperclassWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 {
     if (uMsg == WM_NCCREATE)
     {
-        LineNumEdit* pCtrl = new LineNumEdit();
-        pCtrl->Attach(hwnd);
+        LineNumEdit* pCtrl = new LineNumEdit(hwnd);
         pCtrl->m_fnOldWndProc = SuperclassWindow();
     }
 
@@ -370,6 +357,7 @@ INT LineNumEdit::GetColumnWidth()
     if (m_cxColumn)
         return m_cxColumn; // cached
 
+    // get text extent
     SIZE siz;
     HDC hDC = ::GetDC(m_hwnd);
     HGDIOBJ hFontOld = ::SelectObject(hDC, GetWindowFont(m_hwnd));
@@ -381,6 +369,7 @@ INT LineNumEdit::GetColumnWidth()
     DWORD dwMargins = DWORD(::SendMessage(m_hwnd, EM_GETMARGINS, 0, 0));
     INT leftmargin = LOWORD(dwMargins), rightmargin = HIWORD(dwMargins);
 
+    // save and return
     m_cxColumn = leftmargin + (m_num_digits * siz.cx) + rightmargin + leftmargin;
     return m_cxColumn;
 }
@@ -404,12 +393,11 @@ WNDPROC LineNumEdit::SuperclassWindow()
 }
 
 #ifdef LINENUMEDIT_DLL
-BOOL WINAPI
-DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
-{
-    if (fdwReason == DLL_PROCESS_ATTACH)
-        return LineNumEdit::SuperclassWindow() != NULL;
-
-    return TRUE;
-}
+    BOOL WINAPI
+    DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
+    {
+        if (fdwReason == DLL_PROCESS_ATTACH)
+            return (LineNumEdit::SuperclassWindow() != NULL);
+        return TRUE;
+    }
 #endif

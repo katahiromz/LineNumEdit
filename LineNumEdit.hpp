@@ -18,6 +18,10 @@
 #define LNEM_GETCOLUMNWIDTH (WM_USER + 106)
 #define LNEM_GETLINEMARK (WM_USER + 107)
 
+#ifndef LINENUMEDIT_DEFAULT_DIGITS
+    #define LINENUMEDIT_DEFAULT_DIGITS 4
+#endif
+
 #ifdef LINENUMEDIT_IMPL
 
 #ifndef _INC_SHLWAPI
@@ -136,7 +140,7 @@ protected:
     INT m_topmargin, m_linedelta;
     LPWSTR m_format;
     HBITMAP m_hbm;
-    INT m_cx, m_cy;
+    SIZE m_siz;
 
     INT GetLineHeight() const
     {
@@ -175,10 +179,6 @@ protected:
     friend class LineNumEdit;
 };
 
-#ifndef LINENUMEDIT_DEFAULT_DIGITS
-    #define LINENUMEDIT_DEFAULT_DIGITS 4
-#endif
-
 class LineNumEdit : public LineNumBase
 {
 public:
@@ -209,7 +209,6 @@ public:
         if (!format)
             format = TEXT("%d");
         m_hwndStatic.SetLineNumberFormat(format);
-        m_hwndStatic.Redraw();
     }
 
     LRESULT CALLBACK
