@@ -163,6 +163,8 @@ protected:
     static BOOL CALLBACK
     PropEnumProc(HWND hwnd, LPCTSTR lpszString, HANDLE hData)
     {
+        if (HIWORD(lpszString) == 0)
+            return TRUE;
         if (::StrCmpNI(lpszString, TEXT("LineNum-"), 8) == 0)
             ::RemoveProp(hwnd, lpszString);
         return TRUE;
