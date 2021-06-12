@@ -78,7 +78,9 @@ public:
     {
         assert(m_hwnd == NULL);
         SetWindowLongPtr(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
-        m_fnOldWndProc = SubclassWindow(hwnd, LineNumBase::WindowProc);
+        m_fnOldWndProc = 
+            reinterpret_cast<WNDPROC>(SetWindowLongPtr(hwnd, GWLP_WNDPROC, 
+                reinterpret_cast<LONG_PTR>(LineNumBase::WindowProc)));
         m_hwnd = hwnd;
         return TRUE;
     }
@@ -86,7 +88,7 @@ public:
     HWND Detach()
     {
         SetWindowLongPtr(m_hwnd, GWLP_USERDATA, 0);
-        SubclassWindow(m_hwnd, m_fnOldWndProc);
+        SetWindowLongPtr(m_hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(m_fnOldWndProc));
         m_fnOldWndProc = NULL;
         HWND hwnd = m_hwnd;
         m_hwnd = NULL;
