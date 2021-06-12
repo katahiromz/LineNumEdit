@@ -41,6 +41,7 @@ LineNumStatic::WindowProcDx(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     RECT rc;
     POINT pt;
     PAINTSTRUCT ps;
+    HWND hwndEdit;
     switch (uMsg)
     {
     case WM_PAINT:
@@ -53,11 +54,12 @@ LineNumStatic::WindowProcDx(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     case WM_LBUTTONDOWN:
     case WM_LBUTTONDBLCLK:
     case WM_MOUSEMOVE:
-        ::GetClientRect(hwnd, &rc);
+        hwndEdit = GetEdit();
+        GetClientRect(hwnd, &rc);
         pt.x = rc.right + 1;
         pt.y = GET_Y_LPARAM(lParam);
-        ::MapWindowPoints(hwnd, GetEdit(), &pt, 1);
-        break;
+        ::MapWindowPoints(hwnd, hwndEdit, &pt, 1);
+        return SendMessage(hwndEdit, uMsg, wParam, MAKELPARAM(pt.x, pt.y));
     case WM_ERASEBKGND:
         return TRUE;
     case WM_DESTROY:
