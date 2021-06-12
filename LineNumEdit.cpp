@@ -332,12 +332,17 @@ LineNumEdit::WindowProcDx(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
     case WM_SETTEXT: case WM_CHAR: case WM_KEYDOWN: case WM_KEYUP: case WM_VSCROLL:
     case WM_CUT: case WM_PASTE: case WM_UNDO: case WM_MOUSEWHEEL:
     case EM_UNDO: case EM_SCROLL: case EM_SCROLLCARET: case EM_LINESCROLL:
-    case EM_REPLACESEL: case EM_SETHANDLE: case EM_SETMARGINS:
+    case EM_REPLACESEL: case EM_SETHANDLE:
         ret = DefWndProc(hwnd, uMsg, wParam, lParam);
         m_hwndStatic.Redraw();
         return ret;
     case WM_SIZE: case WM_SETFONT:
         ret = DefWndProc(hwnd, uMsg, wParam, lParam);
+        Prepare();
+        return ret;
+    case EM_SETMARGINS:
+        ret = DefWndProc(hwnd, uMsg, wParam, lParam);
+        m_cxColumn = 0; // clear cache
         Prepare();
         return ret;
     }
