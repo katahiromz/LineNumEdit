@@ -22,7 +22,8 @@ LineNumEdit::SuperclassWindow(); // Initialize the library
 
 And create the `"LineNumEdit"` window by
 `CreateWindow`/`CreateWindowEx`/`DialogBox` functions
-with specifying the window class `"LineNumEdit"`. See also [LineNumEdit_test.cpp](LineNumEdit_test.cpp).
+with specifying the window class `"LineNumEdit"`.
+See also [LineNumEdit_test.cpp](LineNumEdit_test.cpp) and [LineNumEdit_test_res.rc](LineNumEdit_test_res.rc).
 
 You can also use this library even as a DLL:
 
