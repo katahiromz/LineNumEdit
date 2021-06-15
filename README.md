@@ -20,10 +20,11 @@ As static:
 LineNumEdit::SuperclassWindow(); // Initialize the library
 ```
 
-And create the `"LineNumEdit"` window by `CreateWindow`/`CreateWindowEx` function.
-You can also use this window class in your dialog boxes.
+And create the `"LineNumEdit"` window by
+`CreateWindow`/`CreateWindowEx`/`DialogBox` functions
+with specifying the window class `"LineNumEdit"`.
 
-As a DLL:
+You can also use this library even as a DLL:
 
 ```c
 LoadLibraryA("LineNumEdit");
@@ -91,7 +92,7 @@ Gets the width of the line number column.
 
 ### `LNEM_GETLINEMARK` message
 
-Get the color setting of a line number.
+Gets the color setting of a line number.
 
 - `wParam`: The line number.
 - `lParam`: Ignored.
