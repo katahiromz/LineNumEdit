@@ -415,8 +415,14 @@ WNDPROC LineNumEdit::SuperclassWindow() // "superclassing"
 #ifdef LINENUMEDIT_DLL
     BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
     {
-        if (fdwReason == DLL_PROCESS_ATTACH)
+        switch (fdwReason)
+        {
+        case DLL_PROCESS_ATTACH:
             return (LineNumEdit::SuperclassWindow() != NULL);
+        case DLL_PROCESS_DETACH:
+            ::UnregisterClass(LineNumEdit::SuperWndClassName(), NULL);
+            break;
+        }
         return TRUE;
     }
 #endif
