@@ -39,7 +39,7 @@ Specifies the format of the line number label. For example, it's `TEXT("%d")`.
 
 - `wParam`: Ignored.
 - `lParam`: The format of `LPCTSTR`.
-- Return value: zero.
+- Returns: zero.
 
 ### `LNEM_SETNUMOFDIGITS` message
 
@@ -47,15 +47,15 @@ Sets the number of digits to indicate the width of the column.
 
 - `wParam`: The number of digits.
 - `lParam`: Ignored.
-- Return value: zero.
+- Returns: zero.
 
 ### `LNEM_SETLINEMARK` message
 
 Sets the color of the line label.
 
 - `wParam`: The line number to set a mark.
-- `lParam`: The `COLORREF` value. Use `RGB` macro to set this.
-- Return value: zero.
+- `lParam`: The `COLORREF` value or `CLR_INVALID`. Use `RGB` macro to set this.
+- Returns: zero.
 
 ### `LNEM_CLEARLINEMARKS` message
 
@@ -63,7 +63,7 @@ Clears the color settings.
 
 - `wParam`: Ignored.
 - `lParam`: Ignored.
-- Return value: zero.
+- Returns: zero.
 
 ### `LNEM_SETLINEDELTA` message
 
@@ -71,7 +71,7 @@ Specifies the line number of the top line.
 
 - `wParam`: The line number.
 - `lParam`: Ignored.
-- Return value: zero.
+- Returns: zero.
 
 ### `LNEM_SETCOLUMNWIDTH` message
 
@@ -79,20 +79,20 @@ Sets the width of the column.
 
 - `wParam`: The width of the column, in pixels.
 - `lParam`: Ignored.
-- Return value: zero.
+- Returns: zero.
 
 ### `LNEM_GETCOLUMNWIDTH` message
 
 - `wParam`: Ignored.
 - `lParam`: Ignored.
-- Return value: The column width in pixels.
+- Returns: The column width in pixels.
 
 ### `LNEM_GETLINEMARK` message
 
 - `wParam`: The line number.
 - `lParam`: Ignored.
-- Return value: The `COLORREF` value or `CLR_INVALID`.
+- Returns: The `COLORREF` value or `CLR_INVALID`.
 
 ## Contact us
 
-Katayama Hirofumi MZ katayama.hirofumi.mz@gmail.com
+Please send e-mail to katayama.hirofumi.mz@gmail.com .
