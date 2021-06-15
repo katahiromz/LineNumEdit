@@ -54,7 +54,7 @@ Sets the number of digits to indicate the width of the column.
 Sets the color of the line label.
 
 - `wParam`: The line number to set a mark.
-- `lParam`: The `COLORREF` value or `CLR_INVALID`. Use `RGB` macro to set this.
+- `lParam`: The `COLORREF` value or `CLR_INVALID`. Use `RGB` macro to get the `COLORREF` value.
 - Return value: zero.
 
 ### `LNEM_CLEARLINEMARKS` message
