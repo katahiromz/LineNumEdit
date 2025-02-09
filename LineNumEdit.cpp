@@ -355,7 +355,9 @@ LineNumEdit::SuperclassWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
     LineNumEdit* pCtrl = NULL;
     if (uMsg == WM_NCCREATE)
     {
-        pCtrl = new LineNumEdit(hwnd);
+        pCtrl = new LineNumEdit();
+        pCtrl->m_hwnd = hwnd;
+        SetWindowLongPtrW(hwnd, GWLP_USERDATA, (LONG_PTR)pCtrl);
         pCtrl->m_fnOldWndProc = SuperclassWindow();
     }
     else if (uMsg == WM_NCDESTROY)
